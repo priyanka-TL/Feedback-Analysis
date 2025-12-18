@@ -1,0 +1,26 @@
+{
+  "name": "district-report-generator",
+  "version": "1.0.0",
+  "description": "Automated district-wise report generation using Gemini API",
+  "main": "process.js",
+  "scripts": {
+    "start": "node process.js",
+    "test": "node process.js",
+    "reset-progress": "node -e \"require('fs').unlinkSync('./progress.json')\" && echo 'Progress reset'"
+  },
+  "keywords": [
+    "csv",
+    "report-generation",
+    "gemini-ai",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "papaparse": "^5.4.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

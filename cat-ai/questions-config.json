@@ -1,0 +1,176 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "csv_column": "Q1. In the last 6 to 12 months, what do you think are some important changes in your school? These can be in students, teachers, parents or the school in general.",
+      "question_text": "In the last 6 to 12 months, what do you think are some important changes in your school? These can be in students, teachers, parents or the school in general.",
+      "response_fields": [
+        {
+          "name": "category_1",
+          "type": "string",
+          "description": "Single category from: Classroom, Student, Teacher, School, Parental Engagement, Not Identified",
+          "allow_multiple_categories": true,
+          "allow_new_categories": true
+        },
+        {
+          "name": "category_2",
+          "type": "enum",
+          "description": "Either PBL, Non-PBL or Not Identified",
+          "enum": ["PBL", "Non-PBL", "Not Identified"],
+          "allow_multiple_categories": false,
+          "allow_new_categories": false
+        },
+        {
+          "name": "reasoning",
+          "type": "string",
+          "description": "Brief explanation of the categorization"
+        }
+      ],
+      "categorization_criteria": "CATEGORY 1 DEFINITIONS (Choose ONE):\n\n**Classroom**\nDefinition: Use this for changes related to teaching methods, specific subject instruction, learning materials (TLM, kits), or the physical classroom environment.\nExamples: \"I started using TLMs,\" \"We made the classroom beautiful,\" \"I implemented group work,\" \"Changes in my science teaching.\"\n\n**Student**\nDefinition: Use this for changes where the primary focus is on student outcomes, behaviors, attitudes, or skills.\nExamples: \"Students' attendance improved,\" \"Children became more curious,\" \"The children's learning level increased,\" \"Students are no longer afraid to ask questions.\"\n\n**Teacher**\nDefinition: Use this for changes related to the teacher's own professional development, collaboration with other teachers, or personal motivation/attitudes.\nExamples: \"I started collaborating more with my colleagues,\" \"We hold regular teacher meetings,\" \"My own confidence in teaching has grown.\"\n\n**School**\nDefinition: Use this for broad, systemic changes that affect the entire school, its policies, infrastructure, or its overall environment (beyond a single classroom).\nExamples: \"We started a school-wide kitchen garden,\" \"The entire school environment is more positive,\" \"We improved the school library.\"\n\n**Parental Engagement**\nDefinition: Use this for changes specifically focused on improving relationships, communication, or involvement with parents and the wider community.\nExamples: \"We started holding regular PTMs,\" \"Parents are now more involved in school activities.\"\n\n**Not Identified**\nDefinition: Use this category ONLY as a last resort. This is for responses that are too vague, do not describe a change, are non-answers, or are placeholder/error text.\n\n---\n\nCATEGORY 2 DEFINITIONS:\n\n**PBL**\nDefinition: Use this category when the response explicitly mentions \"PBL,\" \"projects,\" \"project-based learning,\" \"making models,\" or the methodology of \"learning by doing\" as the primary change or the cause of other changes.\nKeywords: PBL, PVL, project based learning, project, projects, making projects, making model, learning by doing, activity-based learning, project work.\n\n**Non-PBL**\nDefinition: Use this category when the response describes general changes in the school, students, teachers, or infrastructure without attributing them to Project-Based Learning. This includes changes in attendance (with no PBL reason), new resources, government policies, or general observations.\nKeywords: attendance, smart classrooms, training programs, government facilities, online attendance, policy, new teachers, infrastructure, electricity, water supply, cleanliness, discipline, uniforms, new building.\n\n**Not Identified**\nDefinition: Use this category ONLY as a last resort. This is for responses that are too vague, do not describe a change, are non-answers, or are placeholder/error text."
+    },
+    {
+      "id": "q2",
+      "csv_column": "Q2: Can you tell us about one change in your school that is close to you? How did you make it happen?",
+      "question_text": "Can you tell us about one change in your school that is close to you? How did you make it happen?",
+      "response_fields": [
+        {
+          "name": "category",
+          "type": "enum",
+          "description": "Either 'Steps Mentioned' or 'Steps Not Mentioned'",
+          "enum": ["Steps Mentioned", "Steps Not Mentioned"],
+          "allow_multiple_categories": false,
+          "allow_new_categories": false
+        },
+        {
+          "name": "reasoning",
+          "type": "string",
+          "description": "Brief explanation of the categorization"
+        }
+      ],
+      "categorization_criteria": "CATEGORY DEFINITIONS (Choose ONE):\n\n**Steps Mentioned**\nDefinition: Use this category when the response answers the second part of the question ('How did you make it happen?'). It must describe a specific action, process, or method the teacher or school took to implement the change.\nKeywords: I am doing, by [verb]-ing, we implemented, I started, we held, consulted, advised, conducted, by holding a meeting, through discussion, like a experiment\nExamples:\n- \"Parents were consulted and advised to ensure that all students come to school in uniform.\"\n- \"Reading pattern of student should be changed. I am doing this like a experiment and it functioning well\"\n\n**Steps Not Mentioned**\nDefinition: Use this category when the response only describes the change itself (the 'What') but does not explain the 'How.' This includes descriptions of the new situation, a desired change, or a general philosophy without a specific implementation action.\nKeywords: is, are, became, started, should be, done on time, changes of behavior, increased interest, started coming on time\nExamples:\n- \"School routine done on time every activity done on time\"\n- \"The children started coming on time\"\n- \"Hey, in school, the children should be made to dance and more emphasis should be given on studies...\"\n- \"Yes, children are now interested in studying, first they are a little interested in the idea of government schools.\""
+    },
+    {
+      "id": "q3",
+      "csv_column": "Q3. How did you get the idea to make this change?",
+      "question_text": "How did you get the idea to make this change?",
+      "response_fields": [
+        {
+          "name": "categories",
+          "type": "array",
+          "description": "List of categories from: Trainings & peer learning, Self-observation and self-motivation, System directives and resources (PBL specific), Suggested/Supported by Parents or Community, Other",
+          "allow_multiple_categories": true,
+          "allow_new_categories": true
+        },
+        {
+          "name": "reasoning",
+          "type": "string",
+          "description": "Brief explanation of the categorization"
+        }
+      ],
+      "categorization_criteria": "CATEGORY DEFINITIONS (Can select MULTIPLE):\n\n**System directives and resources (PBL specific)**\nDefinition: Use this category for ideas that came from a top-down source, either as a formal policy or as a specific, structured program. This includes: Changes implemented due to a top-down command, policy, or instruction from the Education Department or government. Ideas that came from the Project-Based Learning program or a similar, systematic, project-focused teaching methodology introduced through training.\nKeywords: department, government, official order, policy, directive, PBL, Project-Based Learning, Project Based, BPL, making projects, doing projects, learning by doing, activity-based learning\n\n**Trainings & peer learning**\nDefinition: Use this category for ideas gained from formal or informal professional development. This includes: Ideas from formal learning events (trainings, workshops, seminars) that are NOT focused on project-based methods. Ideas from peer collaboration (colleagues, headmaster) or from observing other schools.\nKeywords: training, workshop, seminar, orientation, B.Ed, DIET, teacher training, course, colleagues, headmaster, peer collaboration, observing other schools\n\n**Self-observation and self-motivation**\nDefinition: For ideas from the teacher's own initiative, personal experiences, philosophy, or direct observation of students.\nKeywords: Observing Students (boredom, interest), Personal Experience (childhood, sense of duty), Self-Study (reading books)\n\n**Suggested/Supported by Parents or Community**\nDefinition: For ideas originating from parents, guardians, or the wider community.\nKeywords: parents, parent meeting, community, village, rally, guardians, public\n\n**Other**\nDefinition: Use this category ONLY as a last resort if a response clearly does not fit any of the above four categories. Includes: Ideas from external media (YouTube) that are not part of a formal training or self-study."
+    },
+
+    {
+      "id": "q4",
+      "csv_column": "Q4: In the next 3–6 months, what is your plan for this change?",
+      "question_text": "In the next 3–6 months, what is your plan for this change?",
+      "allow_multiple_categories": false,
+      "response_fields": [
+        {
+          "name": "category",
+          "type": "enum",
+          "description": "One of: Has some plan, Continue/Aspirational, No Plan",
+          "enum": ["Has some plan", "Continue/Aspirational", "No Plan"],
+          "allow_multiple_categories": false,
+          "allow_new_categories": false
+        },
+        {
+          "name": "reasoning",
+          "type": "string",
+          "description": "Brief explanation of the categorization"
+        }
+      ],
+      "categorization_criteria": "CATEGORY DEFINITIONS (Choose ONE):\n\n**Has some plan**\nDefinition: Use this category only when the response describes at least one clear, new, and actionable step or a specific new initiative that the teacher will personally implement. The plan must be a concrete action, not just a general idea or goal.\nKeywords/Examples:\n- \"We want to organize a meeting...\"\n- \"I am planning engaging activities\"\n- \"Formation of student groups... A 'Project Exhibition' will be held...\"\n- \"To plant trees regularly.\"\n- \"I will make a group of 3 to 5 students and prepare models...\"\n- \"Creation of smart class in school\"\n- \"We will take weekly tests...\"\n- \"Create a reading corner for children...\"\n- \"Creating some models like purification of water...\"\n- \"A theme-based teacher-parent meeting will be organised every month.\"\n- \"I am thinking of taking a small test on one subject every Saturday.\"\n- \"...setting up a small class library... and organize a monthly reading day...\"\n\n**Continue/Aspirational**\nDefinition: Use this category for responses that show intent but lack a new, specific, actionable step. Includes continuations of existing activities or general aspirational goals.\nKeywords: continue, carry on, keep doing, PBL will continue, this activity continued, still carry on, sustained effort, will try to do better, providing quality education, motivate children, make them more interested, develop their skills, work harder, I will give my best, increase participation, improving the educational level\n\n**No Plan**\nDefinition: Use this category when the response lacks any plan, includes non-answers, depends on external factors, or is a placeholder/empty response.\nKeywords: Nothing, No, No plan, The plan is not ready yet, I cannot say anything right now, Didn't thought yet, There is no plan, If the next government is ready for this..., depends on higher authority, shortage of buildings, No space in the school, Thank you, Good, Continuity, Always, PBL, The cell is empty, Please provide the teacher's response"
+    },
+    {
+      "id": "q5",
+      "csv_column": "Q5: What helped you make this change in your school?",
+      "question_text": "What helped you make this change in your school?",
+      "response_fields": [
+        {
+          "name": "categories",
+          "type": "array",
+          "description": "List of factors. Suggested categories: Students (Their interest/participation), Teachers & Staff (Colleague support), PBL Resources & Training (Program support), Self-Motivation (Internal drive), Parents & Community (External support)",
+          "allow_multiple_categories": true,
+          "allow_new_categories": true
+        },
+        {
+          "name": "reasoning",
+          "type": "string",
+          "description": "Brief explanation of the categorization"
+        }
+      ],
+      "categorization_criteria": "CATEGORY DEFINITIONS :\n\nSuggested categories to use as guidance:\n- **Students (Their interest/participation)**: Student enthusiasm, engagement, willingness to participate\n- **Teachers & Staff (Colleague support)**: Support from fellow teachers, headmaster, staff collaboration\n- **PBL, Resources, & Training (Program support)**: PBL training, kits, materials, workshops\n- **Self-Motivation (Internal drive)**: Teacher's own commitment, passion, dedication\n- **Parents & Community (External support)**: Parental involvement, community backing, external stakeholders\n\nYou may suggest new categories if the response describes factors that don't fit these suggested categories well."
+    },
+    {
+      "id": "q6",
+      "csv_column": "Q6: What are some challenges you face while making  changes in schools?",
+      "question_text": "What are some challenges you face while making changes in schools?",
+      "response_fields": [
+        {
+          "name": "categories",
+          "type": "array",
+          "description": "List of challenges. Suggested categories: Student-Related Issues (attendance, discipline), Lack of Resources/Infrastructure, Time / Workload, Teacher / Staff Issues (shortages, support), Parent and Community",
+          "allow_multiple_categories": true,
+          "allow_new_categories": true
+        },
+        {
+          "name": "reasoning",
+          "type": "string",
+          "description": "Brief explanation of the categorization"
+        }
+      ],
+      "categorization_criteria": "CATEGORY DEFINITIONS:\n\nSuggested categories to use as guidance:\n- **Student-Related Issues**: attendance problems, discipline issues, student motivation, student backgrounds\n- **Lack of Resources/Infrastructure**: shortage of materials, teaching aids, physical infrastructure problems\n- **Time / Workload**: insufficient time, too many responsibilities, administrative burden\n- **Teacher / Staff Issues**: teacher shortages, lack of support staff, coordination problems\n- **Parent and Community**: lack of parental involvement, community resistance, communication gaps\n\nYou may suggest new categories if the response describes challenges that don't fit these suggested categories well."
+    },
+    {
+      "id": "q7",
+      "csv_column": "Q7: What are some other changes you are planning in your school in next 3-6 months?",
+      "question_text": "What are some other changes you are planning in your school in next 3-6 months?",
+      "response_fields": [
+        {
+          "name": "categories",
+          "type": "array",
+          "description": "List of planned changes. Suggested themes: Academic & Learning (General improvement), Infrastructure & Resources (Library, garden), Student Activities (Sports, reading), Parent & Community (Meetings, awareness)",
+          "allow_multiple_categories": true,
+          "allow_new_categories": true
+        },
+        {
+          "name": "reasoning",
+          "type": "string",
+          "description": "Brief explanation of the categorization"
+        }
+      ],
+      "categorization_criteria": "CATEGORY DEFINITIONS:\n\nSuggested themes to use as guidance:\n- **Academic & Learning**: Curriculum improvements, teaching methods, learning outcomes\n- **Infrastructure & Resources**: Library development, gardens, classrooms, materials\n- **Student Activities**: Sports, extracurriculars, clubs, reading programs\n- **Parent & Community**: PTMs, awareness campaigns, community engagement\n\nYou may suggest new categories if the response describes planned changes that don't fit these suggested themes well. If response is empty use \"NO RESPONSE\""
+    },
+    {
+      "id": "q8",
+      "csv_column": "Q8: What support do you need to make changes in school?",
+      "question_text": "What support do you need to make changes in school?",
+      "response_fields": [
+        {
+          "name": "categories",
+          "type": "array",
+          "description": "List of support types from: Resources, Training, Peer Support, Infrastructural, No Support Required",
+          "allow_multiple_categories": true,
+          "allow_new_categories": true
+        },
+        {
+          "name": "reasoning",
+          "type": "string",
+          "description": "Brief explanation of the categorization"
+        }
+      ],
+      "categorization_criteria": "CATEGORY DEFINITIONS:\n\n**Resources**\nDefinition: Use this category when the response requests materials, funding, or human staff. This includes tangible items for activities (kits, stationery), money, and personnel (more teachers, subject-specific teachers).\nKeywords: Resources, kit, PBL kit, chart paper, material, money, economic, financial, funding, budget, TLM, books, teachers, staff, science teacher, math teacher\nExamples:\n- \"Economic. Chart paper color card boar etc.\"\n- \"If we get the Pal Kit, everything else will happen through parent meetings...\"\n- \"There is a shortage of teachers. Therefore, the school should have a subject-wise number of teachers.\"\n\n**Training**\nDefinition: Use this category when the response requests more professional development, guidance, workshops, or mentorship for teachers.\nKeywords: Training, workshops, guidance, mentors, demo, seminar, how to, special training\nExamples:\n- \"I need more time to do it better... along with more training and workshops on innovative teaching methods...\"\n- \"There should be training every month, subject wise i.e. there should be special science teachers.\"\n- \"Training and calendars continued to be available.\"\n\n**Peer Support**\nDefinition: Use this category when the response requests support, collaboration, or approval from other people, such as colleagues, the Headmaster (HM), parents, or the community.\nKeywords: Support from HM, coworkers, fellow teachers, principal, parents, community, collaboration, cooperation, villagers, support from all team members\nExamples:\n- \"Constant support from my HM, my coworkers and my dearest students\"\n- \"A bit of help from fellow school teachers would be nice.\"\n- \"To bring about change in the school, I need the support of the principal, peer teachers, parents, and the community.\"\n\n**Infrastructural**\nDefinition: Use this category when the response requests improvements to the physical school environment, such as buildings, rooms, or fixed equipment.\nKeywords: Building, rooms, classrooms, boundary wall, toilets, drinking water, lights, fans, playground, lab, ICT, computers, smart class, projector, infrastructure\nExamples:\n- \"Subject teachers and buildings\"\n- \"In summer, there should be provision of fans for children, clean water should be provided and the playground should be big.\"\n- \"Availability of resources, boundary wall, toilets, drinking water, lights\"\n\n**No Support Required**\nDefinition: Use this category when the response explicitly states that no external help or resources are needed, or that they are self-sufficient.\nKeywords: No, no help needed, we do it ourselves, nothing, none, no collaboration required, self sufficient\nExamples:\n- \"No help needed, we do it ourselves.\"\n- \"No, we don't need any help, we do it ourselves.\"\n- \"The school is self sufficient\""
+    }
+  ]
+}

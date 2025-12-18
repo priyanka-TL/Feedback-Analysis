@@ -1,0 +1,25 @@
+{
+  "name": "multi-question-csv-categorization",
+  "version": "2.0.0",
+  "description": "Multi-question CSV categorization using Google Gemini API",
+  "main": "categorize-multi-question.js",
+  "scripts": {
+    "start": "node categorize-multi-question.js",
+    "test": "node categorize-multi-question.js",
+    "clean": "rm -f output.csv progress.json categorization.log"
+  },
+  "keywords": [
+    "csv",
+    "categorization",
+    "gemini",
+    "ai",
+    "education"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0"
+  }
+}

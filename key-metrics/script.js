@@ -6,6 +6,15 @@ const path = require("path");
 const crypto = require("crypto");
 const Papa = require("papaparse");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+require('dotenv').config();
+
+const apiKeys = process.env.API_KEYS 
+  ? process.env.API_KEYS.split(',').map(key => key.trim()).filter(key => key.length > 0)
+  : [];
+
+if (apiKeys.length === 0) {
+  throw new Error("No API keys provided. Set the API_KEYS environment variable.");
+}
 
 const CONFIG = {
   inputCsv: "./input.csv",
@@ -14,10 +23,7 @@ const CONFIG = {
   debugDir: "./debug",
   progressFile: "./progress.json",
 
-  geminiApiKeys: [
-
-  ],
-
+  geminiApiKeys: apiKeys,
   model: "gemini-2.5-flash",
   maxRetries: 5,
   retryDelayMs: 2000,
@@ -30,45 +36,99 @@ const CONFIG = {
   // Skip batches that fail after all retries instead of crashing
   skipFailedBatches: true,
 
-  questionMappings: {
-    "Q1. In the last 6 to 12 months, what do you think are some important changes in your school? These can be in students, teachers, parents or the school in general.":
+//   questionMappings: {
+//     "Q1. In the last 6 to 12 months, what do you think are some important changes in your school? These can be in students, teachers, parents or the school in general.":
+//       {
+//         column:
+//           "Q1. In the last 6 to 12 months, what do you think are some important changes in your school? These can be in students, teachers, parents or the school in general.",
+//         analysisType: "List of improvements",
+//         shortName: "Changes in Last 6-12 Months",
+//       },
+//     "Q3. How did you get the idea to make this change?": {
+//       column: "Q3. How did you get the idea to make this change?",
+//       analysisType: "List of reasons/motivations behind improvements",
+//       shortName: "Ideas and Motivations",
+//     },
+//     "Q5: What helped you make this change in your school?": {
+//       column: "Q5: What helped you make this change in your school?",
+//       analysisType: "List of things that helped",
+//       shortName: "Enabling Factors",
+//     },
+//     "Q6: What are some challenges you face while making  changes in schools?": {
+//       column:
+//         "Q6: What are some challenges you face while making  changes in schools?",
+//       analysisType: "List of challenges",
+//       shortName: "Challenges Faced",
+//     },
+//     "Q7: What are some other changes you are planning in your school in next 3-6 months?":
+//       {
+//         column:
+//           "Q7: What are some other changes you are planning in your school in next 3-6 months?",
+//         analysisType: "List of planned improvements",
+//         shortName: "Future Plans (3-6 months)",
+//       },
+//     "Q8: What support do you need to make changes in school?": {
+//       column: "Q8: What support do you need to make changes in school?",
+//       analysisType: "List of support required",
+//       shortName: "Support Needed",
+//     },
+//   },
+//   districtColumn: "District",
+// };
+
+questionMappings: {
+    "Q1: In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general":
       {
         column:
-          "Q1. In the last 6 to 12 months, what do you think are some important changes in your school? These can be in students, teachers, parents or the school in general.",
+          "Q1: In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general",
         analysisType: "List of improvements",
         shortName: "Changes in Last 6-12 Months",
       },
-    "Q3. How did you get the idea to make this change?": {
-      column: "Q3. How did you get the idea to make this change?",
+    "Q2: How did you get the idea for this improvement?": {
+      column: "Q2: How did you get the idea for this improvement?",
       analysisType: "List of reasons/motivations behind improvements",
       shortName: "Ideas and Motivations",
     },
-    "Q5: What helped you make this change in your school?": {
-      column: "Q5: What helped you make this change in your school?",
+    "Q3. What did you do to implement this improvement?": {
+      column: "Q3. What did you do to implement this improvement?",
+      analysisType: "Steps taken to implement the improvement",
+      shortName: "Implementation Steps",
+    },
+    "Q4: What helped you implement this improvement in your school?": {
+      column: "Q4: What helped you implement this improvement in your school?",
       analysisType: "List of things that helped",
       shortName: "Enabling Factors",
     },
-    "Q6: What are some challenges you face while making  changes in schools?": {
+    "Q5: In the next 3-6 months, do you plan to do anything more for the improvement you led?":
+      {
+        column:
+          "Q5: In the next 3-6 months, do you plan to do anything more for the improvement you led?",
+        analysisType: "List of plan on the improvements",
+        shortName: "Plans for Current Improvement",
+      },
+    
+    "Q6: What are some challenges you face while implementing improvements in your school?": {
       column:
-        "Q6: What are some challenges you face while making  changes in schools?",
+        "Q6: What are some challenges you face while implementing improvements in your school?",
       analysisType: "List of challenges",
       shortName: "Challenges Faced",
     },
-    "Q7: What are some other changes you are planning in your school in next 3-6 months?":
+    "Q7: What are some other improvements you are planning in your school in the next 3-6 months?":
       {
         column:
-          "Q7: What are some other changes you are planning in your school in next 3-6 months?",
+          "Q7: What are some other improvements you are planning in your school in the next 3-6 months?",
         analysisType: "List of planned improvements",
-        shortName: "Future Plans (3-6 months)",
+        shortName: "Other New Improvements Planned",
       },
-    "Q8: What support do you need to make changes in school?": {
-      column: "Q8: What support do you need to make changes in school?",
+    "Q8: What support do you need to implement these improvements in your school?": {
+      column: "Q8: What support do you need to implement these improvements in your school?",
       analysisType: "List of support required",
       shortName: "Support Needed",
     },
   },
   districtColumn: "District",
 };
+
 
 // ==================== STATE & LOGGING ====================
 class Logger {

@@ -14,57 +14,112 @@ const COLUMN_DELIM_OVERRIDE = {
   // others default to ';'
 };
 // Question definitions with full text
+// const QUESTIONS = {
+//   q1_category_1: {
+//     shortCode: "Q1a",
+//     question:
+//       "In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general",
+//     subtext: "Primary Category",
+//     section: "Recent Changes",
+//   },
+//   q1_category_2: {
+//     shortCode: "Q1b",
+//     question:
+//       "In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general",
+//     subtext: "Secondary Category",
+//     section: "Recent Changes",
+//   },
+//   q2_category: {
+//     shortCode: "Q2",
+//     question:
+//       "Can you tell us about one change in your school that is close to you? How did you make it happen?",
+//     section: "Personal Change Initiative",
+//   },
+//   q3_categories: {
+//     shortCode: "Q3",
+//     question: "How did you get the idea to make this change?",
+//     section: "Change Inspiration",
+//   },
+//   q4_category: {
+//     shortCode: "Q4",
+//     question: "In the next 3–6 months, what is your plan for this change?",
+//     section: "Future Plans",
+//   },
+//   q5_categories: {
+//     shortCode: "Q5",
+//     question: "What helped you make this change in your school?",
+//     section: "Enabling Factors",
+//   },
+//   q6_categories: {
+//     shortCode: "Q6",
+//     question:
+//       "What are some challenges you face while making changes in schools?",
+//     section: "Challenges",
+//   },
+//   q7_categories: {
+//     shortCode: "Q7",
+//     question:
+//       "What are some other changes you are planning in your school in next 3-6 months?",
+//     section: "Planned Changes",
+//   },
+//   q8_categories: {
+//     shortCode: "Q8",
+//     question: "What support do you need to make changes in school?",
+//     section: "Support Needs",
+//   },
+// };
+
 const QUESTIONS = {
   q1_category_1: {
     shortCode: "Q1a",
     question:
-      "In the last 6 to 12 months, what do you think are some important changes in your school?",
+      "In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general",
     subtext: "Primary Category",
     section: "Recent Changes",
   },
   q1_category_2: {
     shortCode: "Q1b",
     question:
-      "In the last 6 to 12 months, what do you think are some important changes in your school?",
+      "In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general",
     subtext: "Secondary Category",
     section: "Recent Changes",
   },
-  q2_category: {
+  q2_categories: {
     shortCode: "Q2",
     question:
-      "Can you tell us about one change in your school that is close to you? How did you make it happen?",
-    section: "Personal Change Initiative",
-  },
-  q3_categories: {
-    shortCode: "Q3",
-    question: "How did you get the idea to make this change?",
+      "How did you get the idea for this improvement?",
     section: "Change Inspiration",
   },
-  q4_category: {
-    shortCode: "Q4",
-    question: "In the next 3–6 months, what is your plan for this change?",
-    section: "Future Plans",
+  q3_category: {
+    shortCode: "Q3",
+    question: "What did you do to implement this improvement?",
+    section: "Implementation Steps",
   },
-  q5_categories: {
-    shortCode: "Q5",
-    question: "What helped you make this change in your school?",
+  q4_categories: {
+    shortCode: "Q4",
+    question: "What helped you implement this improvement in your school?",
     section: "Enabling Factors",
+  },
+  q5_category: {
+    shortCode: "Q5",
+    question: "In the next 3-6 months, do you plan to do anything more for the improvement you led?",
+    section: "Plans for Current Improvement",
   },
   q6_categories: {
     shortCode: "Q6",
     question:
-      "What are some challenges you face while making changes in schools?",
+      "What are some challenges you face while implementing improvements in your school?",
     section: "Challenges",
   },
   q7_categories: {
     shortCode: "Q7",
     question:
-      "What are some other changes you are planning in your school in next 3-6 months?",
+      "What are some other improvements you are planning in your school in the next 3-6 months?",
     section: "Planned Changes",
   },
   q8_categories: {
     shortCode: "Q8",
-    question: "What support do you need to make changes in school?",
+    question: "What support do you need to implement these improvements in your school?",
     section: "Support Needs",
   },
 };
@@ -286,37 +341,37 @@ function buildAggregates(data) {
 }
 
 /** Build district-wise TRUE/FALSE table for Q2-Q4 Related */
-function buildQ2Q4Summary(data) {
-  const byDistrict = _.groupBy(data, (r) => r.District || "Unknown");
-  const districts = Object.keys(byDistrict).sort();
-  const rows = districts.map((d) => {
-    const list = byDistrict[d];
-    let t = 0,
-      f = 0,
-      n = 0;
-    list.forEach((r) => {
-      const val = parseBoolCell(r[Q2Q4_COL]);
-      if (val === true) t += 1;
-      else if (val === false) f += 1;
-      else n += 1; // null/invalid
-    });
-    const total = list.length;
-    const tp = total ? ((t / total) * 100).toFixed(1) : "0.0";
-    const fp = total ? ((f / total) * 100).toFixed(1) : "0.0";
-    const np = total ? ((n / total) * 100).toFixed(1) : "0.0";
-    return {
-      district: d,
-      trueCount: t,
-      truePct: tp,
-      falseCount: f,
-      falsePct: fp,
-      nullCount: n,
-      nullPct: np,
-      total,
-    };
-  });
-  return { districts, rows };
-}
+// function buildQ2Q4Summary(data) {
+//   const byDistrict = _.groupBy(data, (r) => r.District || "Unknown");
+//   const districts = Object.keys(byDistrict).sort();
+//   const rows = districts.map((d) => {
+//     const list = byDistrict[d];
+//     let t = 0,
+//       f = 0,
+//       n = 0;
+//     list.forEach((r) => {
+//       const val = parseBoolCell(r[Q2Q4_COL]);
+//       if (val === true) t += 1;
+//       else if (val === false) f += 1;
+//       else n += 1; // null/invalid
+//     });
+//     const total = list.length;
+//     const tp = total ? ((t / total) * 100).toFixed(1) : "0.0";
+//     const fp = total ? ((f / total) * 100).toFixed(1) : "0.0";
+//     const np = total ? ((n / total) * 100).toFixed(1) : "0.0";
+//     return {
+//       district: d,
+//       trueCount: t,
+//       truePct: tp,
+//       falseCount: f,
+//       falsePct: fp,
+//       nullCount: n,
+//       nullPct: np,
+//       total,
+//     };
+//   });
+//   return { districts, rows };
+// }
 
 /** Generate single-file markdown with:
  * - per-question table: Category | <State> | <Districts...>
@@ -388,28 +443,28 @@ function generateMarkdownSingle(results, q2q4) {
     });
   });
 
-  // Q2-Q4 Related summary
-  md += `---\n\n`;
-  md += `## Q2–Q4 Related: District-wise TRUE/FALSE Summary\n\n`;
-  md += `_Column: "${Q2Q4_COL}" — cells parsed as TRUE/FALSE. Unparseable values counted as "Unknown"._\n\n`;
+  // // Q2-Q4 Related summary
+  // md += `---\n\n`;
+  // md += `## Q2–Q4 Related: District-wise TRUE/FALSE Summary\n\n`;
+  // md += `_Column: "${Q2Q4_COL}" — cells parsed as TRUE/FALSE. Unparseable values counted as "Unknown"._\n\n`;
 
-  // Table header
-  md += `| District | TRUE | FALSE | Unknown | Total |\n`;
-  md += `|:--|--:|--:|--:|--:|\n`;
-  q2q4.rows.forEach((r) => {
-    const t = `${r.trueCount} (${r.truePct}%)`;
-    const f = `${r.falseCount} (${r.falsePct}%)`;
-    const n = `${r.nullCount} (${r.nullPct}%)`;
-    md += `| ${r.district} | ${t} | ${f} | ${n} | ${r.total} |\n`;
-  });
-  md += `\n`;
+  // // Table header
+  // md += `| District | TRUE | FALSE | Unknown | Total |\n`;
+  // md += `|:--|--:|--:|--:|--:|\n`;
+  // q2q4.rows.forEach((r) => {
+  //   const t = `${r.trueCount} (${r.truePct}%)`;
+  //   const f = `${r.falseCount} (${r.falsePct}%)`;
+  //   const n = `${r.nullCount} (${r.nullPct}%)`;
+  //   md += `| ${r.district} | ${t} | ${f} | ${n} | ${r.total} |\n`;
+  // });
+  // md += `\n`;
 
-  // Appendix
-  md += `---\n\n`;
-  md += `## Appendix\n\n`;
-  md += `- State column shows count with percentage of all responses.\n`;
-  md += `- District columns show count with percentage of that district's responses.\n`;
-  md += `- "${Q2Q4_COL}" summary parses common boolean variants: TRUE/FALSE, Yes/No, 1/0.\n\n`;
+  // // Appendix
+  // md += `---\n\n`;
+  // md += `## Appendix\n\n`;
+  // md += `- State column shows count with percentage of all responses.\n`;
+  // md += `- District columns show count with percentage of that district's responses.\n`;
+  // md += `- "${Q2Q4_COL}" summary parses common boolean variants: TRUE/FALSE, Yes/No, 1/0.\n\n`;
 
   return md;
 }
@@ -435,8 +490,9 @@ async function main() {
     console.log("Aggregating (state + districts)...");
     const results = buildAggregates(data);
 
-    console.log(`Building "${Q2Q4_COL}" district summary...`);
-    const q2q4 = buildQ2Q4Summary(data);
+    // console.log(`Building "${Q2Q4_COL}" district summary...`);
+    // const q2q4 = buildQ2Q4Summary(data);
+    const q2q4 = {}; // OMIT Q2-Q4 SUMMARY
 
     console.log("Writing JSON...");
     fs.writeFileSync(

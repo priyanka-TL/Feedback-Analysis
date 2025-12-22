@@ -2,6 +2,7 @@
   "dependencies": {
     "@google/genai": "^1.28.0",
     "@google/generative-ai": "^0.24.1",
-    "papaparse": "^5.5.3"
+    "papaparse": "^5.5.3",
+    "dotenv": "^17.2.3"
   }
 }

@@ -3,11 +3,41 @@ const { GoogleGenAI } = require("@google/genai");
 const fs = require("fs").promises;
 const Papa = require("papaparse");
 const path = require("path");
+require('dotenv').config();
 
 // ===== CONFIGURATION =====
+// Load API keys from environment variable as comma-separated string
+const apiKeys = process.env.API_KEYS 
+  ? process.env.API_KEYS.split(',').map(key => key.trim()).filter(key => key.length > 0)
+  : [];
+
+if (apiKeys.length === 0) {
+  throw new Error("No API keys provided. Set the API_KEYS environment variable.");
+}
+
+// Load question columns from external JSON file for easy customization
+const QUESTION_COLUMNS_PATH = path.join(__dirname, "questionColumns.json");
+let questionColumns = {};
+try {
+  questionColumns = JSON.parse(require("fs").readFileSync(QUESTION_COLUMNS_PATH, "utf8"));
+} catch (e) {
+  throw new Error(`Failed to load question columns from ${QUESTION_COLUMNS_PATH}: ${e.message}`);
+}
+
+// Generate simplified question list for prompt (remove Q1. prefix)
+function generateQuestionList() {
+  const questions = [];
+  for (const [qNum, fullQuestion] of Object.entries(questionColumns)) {
+    // Remove the "Q1. " or "Q1: " prefix to get just the question text
+    const questionText = fullQuestion.replace(/^Q\d+[.:]\s*/, '');
+    questions.push(`${qNum}: ${questionText}`);
+  }
+  return questions.join('\n');
+}
+
 const CONFIG = {
   // API Keys - add multiple for automatic failover
-  apiKeys: [],
+  apiKeys,
 
   // File paths
   inputFile: "input.csv",
@@ -21,16 +51,7 @@ const CONFIG = {
   maxRows: null, // Process max N rows (null = all rows)
 
   // Columns to process (Q1-Q8)
-  questionColumns: {
-    Q1: "Q1. In the last 6 to 12 months, what do you think are some important changes in your school? These can be in students, teachers, parents or the school in general.",
-    Q2: "Q2: Can you tell us about one change in your school that is close to you? How did you make it happen?",
-    Q3: "Q3. How did you get the idea to make this change?",
-    Q4: "Q4: In the next 3–6 months, what is your plan for this change?",
-    Q5: "Q5: What helped you make this change in your school?",
-    Q6: "Q6: What are some challenges you face while making  changes in schools?",
-    Q7: "Q7: What are some other changes you are planning in your school in next 3-6 months?",
-    Q8: "Q8: What support do you need to make changes in school?",
-  },
+  questionColumns,
 
   // Retry configuration
   maxRetries: 5,
@@ -48,17 +69,10 @@ const CONFIG = {
 };
 
 // ===== PROMPT TEMPLATE =====
-const FULL_ROW_PROMPT = `You are a translation and editing assistant. A teacher has provided feedback responses originally given in Hindi and translated to English. Your task is to improve the clarity, grammar, and readability of ALL responses while maintaining the teacher's authentic voice and preserving all information.
+const FULL_ROW_PROMPT_TEMPLATE = `You are a translation and editing assistant. A teacher has provided feedback responses originally given in Hindi and translated to English. Your task is to improve the clarity, grammar, and readability of ALL responses while maintaining the teacher's authentic voice and preserving all information.
 
-**Context**: The same teacher answered these 8 questions about changes in their school:
-Q1: In the last 6–12 months, what are important changes in your school?
-Q2: Tell us about one change that is close to you and how you made it happen.
-Q3: How did you get the idea to make this change?
-Q4: What is your plan for this change in the next 3–6 months?
-Q5: What helped you make this change?
-Q6: What challenges do you face while making changes?
-Q7: What other changes are you planning in the next 3–6 months?
-Q8: What support do you need to make changes?
+**Context**: The same teacher answered these {{QUESTION_COUNT}} questions about changes in their school:
+{{QUESTION_LIST}}
 
 **Teacher's Original Responses**:
 {{RESPONSES}}
@@ -94,6 +108,11 @@ Q8: What support do you need to make changes?
 16. If a response is empty, under 10 characters, or just whitespace, return it unchanged or as an empty string.  
 
 Return ONLY the improved responses in the exact JSON format specified, with no meta-commentary or additional text.`;
+
+// Generate the full prompt with dynamic question list
+const FULL_ROW_PROMPT = FULL_ROW_PROMPT_TEMPLATE
+  .replace('{{QUESTION_COUNT}}', Object.keys(questionColumns).length)
+  .replace('{{QUESTION_LIST}}', generateQuestionList());
 
 // ===== JSON SCHEMA FOR GEMINI =====
 // 2. SCHEMA CHANGED: 'SchemaType.OBJECT' is now just the string "OBJECT", etc.

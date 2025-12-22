@@ -3,11 +3,20 @@ const fs = require("fs");
 const csv = require("csv-parser");
 const { createObjectCsvWriter } = require("csv-writer");
 const path = require("path");
+require('dotenv').config();
 
 // ==================== CONFIGURATION ====================
+const apiKeys = process.env.API_KEYS 
+  ? process.env.API_KEYS.split(',').map(key => key.trim()).filter(key => key.length > 0)
+  : [];
+
+if (apiKeys.length === 0) {
+  throw new Error("No API keys provided. Set the API_KEYS environment variable.");
+}
+
 const CONFIG = {
   // API Keys - Add multiple keys for rotation
-  GEMINI_API_KEYS: [],
+  GEMINI_API_KEYS: apiKeys,
 
   // File paths
   INPUT_CSV: "./input.csv",

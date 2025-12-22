@@ -18,7 +18,8 @@
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "papaparse": "^5.4.1"
+    "papaparse": "^5.4.1",
+    "dotenv": "^17.2.3"
   },
   "engines": {
     "node": ">=14.0.0"

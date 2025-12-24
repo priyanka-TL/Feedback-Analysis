@@ -1,0 +1,196 @@
+{
+  "q1": {
+    "question_text": "What changes have you made in your school in the last 6-12 months?",
+    "column_name": "Q1",
+    "response_fields": {
+      "category": {
+        "type": "enum",
+        "enum": [
+          "TEACHING_METHODS",
+          "INFRASTRUCTURE",
+          "COMMUNITY_ENGAGEMENT",
+          "STUDENT_ACTIVITIES",
+          "ADMINISTRATIVE",
+          "OTHER"
+        ],
+        "description": "Main category of the change implemented"
+      },
+      "reasoning": {
+        "type": "string",
+        "description": "Brief explanation for the categorization choice"
+      }
+    },
+    "categorization_criteria": {
+      "instructions": "Categorize the change based on its primary focus area. Consider the main intent and impact of the change.",
+      "categories": [
+        {
+          "name": "TEACHING_METHODS",
+          "definition": "Changes related to teaching approaches, pedagogical methods, lesson planning, or instructional techniques",
+          "keywords": ["teaching", "lesson", "pedagogy", "instruction", "learning activities", "classroom methods", "education approach"],
+          "examples": [
+            "Started using group activities in class",
+            "Introduced project-based learning",
+            "Implemented hands-on teaching methods",
+            "Created interactive lesson plans"
+          ]
+        },
+        {
+          "name": "INFRASTRUCTURE",
+          "definition": "Physical changes to school facilities, buildings, resources, or materials",
+          "keywords": ["building", "classroom", "facilities", "construction", "renovation", "resources", "materials", "equipment"],
+          "examples": [
+            "Built new library",
+            "Renovated classrooms",
+            "Added playground equipment",
+            "Installed smart boards"
+          ]
+        },
+        {
+          "name": "COMMUNITY_ENGAGEMENT",
+          "definition": "Initiatives involving parents, community members, or external stakeholders",
+          "keywords": ["parents", "community", "stakeholders", "meetings", "involvement", "participation", "collaboration"],
+          "examples": [
+            "Started parent-teacher meetings",
+            "Organized community events",
+            "Involved parents in school activities",
+            "Created parent committees"
+          ]
+        },
+        {
+          "name": "STUDENT_ACTIVITIES",
+          "definition": "New programs, clubs, events, or activities for students outside regular classes",
+          "keywords": ["activities", "clubs", "events", "programs", "sports", "competitions", "extra-curricular"],
+          "examples": [
+            "Started science club",
+            "Organized sports events",
+            "Created student council",
+            "Launched reading program"
+          ]
+        },
+        {
+          "name": "ADMINISTRATIVE",
+          "definition": "Changes to administrative processes, management, or school operations",
+          "keywords": ["management", "administration", "processes", "operations", "scheduling", "policies", "records"],
+          "examples": [
+            "Improved attendance tracking",
+            "Changed school timings",
+            "Implemented new policies",
+            "Updated record keeping"
+          ]
+        },
+        {
+          "name": "OTHER",
+          "definition": "Changes that don't fit clearly into the above categories or involve multiple areas equally",
+          "keywords": ["multiple", "various", "mixed", "other"],
+          "examples": [
+            "Comprehensive school transformation",
+            "Multiple simultaneous changes",
+            "Unique initiatives"
+          ]
+        }
+      ]
+    }
+  },
+  "q2": {
+    "question_text": "Where did you get the idea for these changes?",
+    "column_name": "Q2",
+    "response_fields": {
+      "sources": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "TRAINING/WORKSHOP",
+            "PEER_TEACHERS",
+            "ONLINE_RESOURCES",
+            "PERSONAL_INITIATIVE",
+            "ADMINISTRATION"
+          ]
+        },
+        "description": "Source(s) of inspiration for the changes (can be multiple)"
+      }
+    },
+    "categorization_criteria": {
+      "instructions": "Identify all sources mentioned. A response can have multiple sources.",
+      "categories": [
+        {
+          "name": "TRAINING/WORKSHOP",
+          "definition": "Ideas from formal training sessions, workshops, seminars, or professional development programs",
+          "keywords": ["training", "workshop", "seminar", "DIET", "EBRC", "professional development"],
+          "examples": ["Got idea from DIET training", "Learned in workshop", "Training program"]
+        },
+        {
+          "name": "PEER_TEACHERS",
+          "definition": "Ideas shared by other teachers, colleagues, or through school visits",
+          "keywords": ["teacher", "colleague", "peer", "other school", "visit", "shared"],
+          "examples": ["Saw another teacher doing this", "Learned from colleague"]
+        },
+        {
+          "name": "ONLINE_RESOURCES",
+          "definition": "Ideas from internet, videos, online courses, social media, or digital platforms",
+          "keywords": ["internet", "online", "video", "YouTube", "website", "digital"],
+          "examples": ["Found on YouTube", "Saw online", "Internet search"]
+        },
+        {
+          "name": "PERSONAL_INITIATIVE",
+          "definition": "Own ideas, observations, or innovations developed independently",
+          "keywords": ["own idea", "myself", "thought", "observed", "experience"],
+          "examples": ["My own idea", "From my experience", "I thought of this"]
+        },
+        {
+          "name": "ADMINISTRATION",
+          "definition": "Direction or guidance from school administration, headmaster, or education officials",
+          "keywords": ["headmaster", "principal", "HM", "administration", "officials", "directed"],
+          "examples": ["Headmaster suggested", "Administration directed"]
+        }
+      ]
+    }
+  },
+  "q3": {
+    "question_text": "What steps did you take to implement these changes?",
+    "column_name": "Q3",
+    "response_fields": {
+      "implementation_category": {
+        "type": "enum",
+        "enum": [
+          "PLANNED_STRUCTURED",
+          "GRADUAL_ITERATIVE",
+          "SIMPLE_DIRECT"
+        ],
+        "description": "Type of implementation approach taken"
+      }
+    },
+    "categorization_criteria": {
+      "instructions": "Categorize based on the level of planning and structure in implementation.",
+      "categories": [
+        {
+          "name": "PLANNED_STRUCTURED",
+          "definition": "Systematic approach with clear planning, multiple steps, resource gathering, and stakeholder involvement",
+          "keywords": ["planning", "prepared", "organized", "steps", "resources", "meeting", "discussion"],
+          "examples": [
+            "Made a plan, gathered materials, discussed with staff, implemented in phases",
+            "Organized meeting, prepared resources, trained others"
+          ]
+        },
+        {
+          "name": "GRADUAL_ITERATIVE",
+          "definition": "Step-by-step approach with learning and adjustment over time",
+          "keywords": ["started small", "gradually", "slowly", "tested", "adjusted", "improved"],
+          "examples": [
+            "Started with one class, then expanded",
+            "Tried and adjusted based on results"
+          ]
+        },
+        {
+          "name": "SIMPLE_DIRECT",
+          "definition": "Direct implementation without extensive planning or complex steps",
+          "keywords": ["just started", "directly", "immediately", "simply"],
+          "examples": [
+            "Just started doing it",
+            "Directly implemented in my class"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -3,7 +3,10 @@
 
 This repository contains tools and scripts for analyzing feedback data, including grammar improvement, category identification, CSV filtering, key metrics extraction, and data extraction.
 
-## 1. Grammar Improvement (`grammar-improve`)
+#
+
+
+# 1. Grammar Improvement (`grammar-improve`)
 1. Update the `questionColumns` variable in the script as needed.
 2. Run the script.
 3. Check the generated output CSV file.
@@ -27,5 +30,3 @@ This repository contains tools and scripts for analyzing feedback data, includin
 ## 6. Data Extraction (`data-extract`)
 1. Define the `QUESTIONS` variable in the script.
 2. Run the script to extract data.
-
-

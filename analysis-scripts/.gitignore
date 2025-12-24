@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+
+# Output files
+output.csv
+output*.csv
+*_output.csv
+pipeline_*.csv
+
+# Progress and logs
+progress.json
+progress*.json
+logs/
+debug/
+reports/
+
+# Backups
+*_backup*.csv
+*.backup
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test files
+test_*.csv
+package-lock.json
+teacher_feedback*

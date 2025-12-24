@@ -1,0 +1,32 @@
+{
+  "name": "feedback-analysis-scripts",
+  "version": "1.0.0",
+  "description": "Professional feedback analysis toolkit with AI-powered categorization, grammar improvement, and data cleaning",
+  "main": "index.js",
+  "scripts": {
+    "pipeline": "node 0_pipeline.js",
+    "improve": "node 1_improve-grammar.js",
+    "categorize": "node 3_categorize.js",
+    "filter": "node 4_filter-csv.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "feedback",
+    "analysis",
+    "ai",
+    "categorization",
+    "nlp",
+    "csv",
+    "gemini"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.5",
+    "papaparse": "^5.4.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

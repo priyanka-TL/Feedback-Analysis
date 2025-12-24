@@ -31,3 +31,6 @@ progress*.json
 debug/
 debug*/
 reports*/
+package-lock.json
+teacher_feedback*
+*.md

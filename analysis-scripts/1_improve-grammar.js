@@ -19,7 +19,6 @@
  *   --backup             Create backup before processing (default: true)
  */
 
-const fs = require('fs');
 const path = require('path');
 
 // Parse command line arguments
@@ -116,6 +115,7 @@ const CSVHandler = require('./utils/csv-handler');
 const ProgressTracker = require('./utils/progress-tracker');
 const APIManager = require('./utils/api-manager');
 const Validator = require('./utils/validator');
+const { getInstance: getQuestionLoader } = require('./utils/question-loader');
 
 // Initialize utilities
 const logger = new Logger(config.logging);
@@ -125,25 +125,16 @@ const apiManager = new APIManager(config, logger);
 const validator = new Validator(config, logger);
 
 /**
- * Load question columns configuration
+ * Load question columns configuration from questions-config.json
+ * Uses shared question-loader utility for single source of truth
  */
 function loadQuestionColumns() {
   try {
-    const configPath = path.resolve(config.paths.questionColumns);
-    
-    // If config file doesn't exist, return default columns
-    if (!fs.existsSync(configPath)) {
-      logger.warn('Question columns config not found, using default Q1-Q8');
-      return {
-        q1: 'Q1', q2: 'Q2', q3: 'Q3', q4: 'Q4',
-        q5: 'Q5', q6: 'Q6', q7: 'Q7', q8: 'Q8'
-      };
-    }
+    // Use the shared question loader to get column mappings
+    const questionLoader = getQuestionLoader(config.paths.questionsConfig, logger);
+    const questionColumns = questionLoader.getColumnMapping();
 
-    const configData = fs.readFileSync(configPath, 'utf8');
-    const questionColumns = JSON.parse(configData);
-
-    logger.info(`Loaded ${Object.keys(questionColumns).length} question columns`);
+    logger.info(`Loaded ${Object.keys(questionColumns).length} question columns from ${questionLoader.getConfigPath()}`);
     return questionColumns;
 
   } catch (error) {

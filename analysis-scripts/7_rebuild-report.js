@@ -24,51 +24,41 @@ const REBUILD_CONFIG = {
   progressFile: "./report_progress.json",
   debugDir: "./debug",
   outputFile: "./reports/analysis_report.md",
-  
-  // Question mappings - must match 5_generate-district-report.js
-  questionMappings: {
-    "Q1": {
-      column: "Q1: In the last 6 to 12 months, what is one improvement that you have led in your school?",
-      analysisType: "List of improvements",
-      shortName: "Changes in Last 6-12 Months",
-    },
-    "Q2": {
-      column: "Q2: How did you get the idea for this improvement?",
-      analysisType: "List of reasons/motivations behind improvements",
-      shortName: "Ideas and Motivations",
-    },
-    "Q3": {
-      column: "Q3. What did you do to implement this improvement?",
-      analysisType: "Steps taken to implement the improvement",
-      shortName: "Implementation Steps",
-    },
-    "Q4": {
-      column: "Q4: What helped you implement this improvement in your school?",
-      analysisType: "List of things that helped",
-      shortName: "Enabling Factors",
-    },
-    "Q5": {
-      column: "Q5: In the next 3-6 months, do you plan to do anything more for the improvement you led?",
-      analysisType: "List of plans for improvements",
-      shortName: "Plans for Current Improvement",
-    },
-    "Q6": {
-      column: "Q6: What are some challenges you face while implementing improvements in your school?",
-      analysisType: "List of challenges",
-      shortName: "Challenges Faced",
-    },
-    "Q7": {
-      column: "Q7: What are some other improvements you are planning in your school in the next 3-6 months?",
-      analysisType: "List of planned improvements",
-      shortName: "Other New Improvements Planned",
-    },
-    "Q8": {
-      column: "Q8: What support do you need to implement these improvements in your school?",
-      analysisType: "List of support required",
-      shortName: "Support Needed",
-    },
-  },
+  questionsConfigFile: "./analysis-scripts/questions-config.json",
+
+  // Question mappings loaded from config file
+  questionMappings: {},
 };
+
+/**
+ * Load question mappings from questions-config.json
+ * Must match the format used in 5_generate-district-report.js
+ */
+function loadQuestionMappings() {
+  const configPath = REBUILD_CONFIG.questionsConfigFile;
+  const fsSync = require('fs');
+
+  if (!fsSync.existsSync(configPath)) {
+    throw new Error(`Questions config file not found: ${configPath}`);
+  }
+
+  try {
+    const configData = JSON.parse(fsSync.readFileSync(configPath, 'utf8'));
+    const mappings = {};
+
+    configData.questions.forEach((q) => {
+      mappings[q.id.toUpperCase()] = {
+        column: q.csv_column,
+        analysisType: q.analysis_type || `Analysis of ${q.question_text}`,
+        shortName: q.section || `Question ${q.id.toUpperCase()}`,
+      };
+    });
+
+    return mappings;
+  } catch (err) {
+    throw new Error(`Failed to load questions config: ${err.message}`);
+  }
+}
 
 // ==================== UTILITY FUNCTIONS ====================
 
@@ -219,13 +209,18 @@ async function main() {
   console.log("🔄 Starting Report Rebuild...\n");
   
   await logger.init();
-  
+
+  // Load question mappings from config
+  console.log("⚙️  Loading questions configuration...");
+  REBUILD_CONFIG.questionMappings = loadQuestionMappings();
+  console.log(`✓ Loaded ${Object.keys(REBUILD_CONFIG.questionMappings).length} questions\n`);
+
   // Read progress (optional, for metadata)
   const progress = await readProgress();
-  
+
   // Collect all debug files
   const debugIndex = await collectDebugFiles();
-  
+
   if (Object.keys(debugIndex).length === 0) {
     throw new Error("No debug files found! Run 5_generate-district-report.js first to generate analysis.");
   }

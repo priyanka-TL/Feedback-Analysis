@@ -149,12 +149,23 @@ class Validator {
         }
       }
 
-      // Validate categorization criteria
+      // Validate categorization criteria (can be string or object)
       if (questionConfig.categorization_criteria) {
-        if (!questionConfig.categorization_criteria.categories) {
-          errors.push(`${questionKey}: Missing categories in categorization_criteria`);
-        } else if (!Array.isArray(questionConfig.categorization_criteria.categories)) {
-          errors.push(`${questionKey}: Categories must be an array`);
+        // Accept both string format (plain text instructions) and object format
+        if (typeof questionConfig.categorization_criteria === 'string') {
+          // String format is valid - this is the instruction text for the AI
+          if (questionConfig.categorization_criteria.trim().length === 0) {
+            warnings.push(`${questionKey}: categorization_criteria is empty`);
+          }
+        } else if (typeof questionConfig.categorization_criteria === 'object') {
+          // Object format should have categories array
+          if (!questionConfig.categorization_criteria.categories) {
+            errors.push(`${questionKey}: Missing categories in categorization_criteria object`);
+          } else if (!Array.isArray(questionConfig.categorization_criteria.categories)) {
+            errors.push(`${questionKey}: Categories must be an array`);
+          }
+        } else {
+          errors.push(`${questionKey}: categorization_criteria must be a string or object`);
         }
       }
     }

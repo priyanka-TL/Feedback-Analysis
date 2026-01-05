@@ -30,55 +30,45 @@ const REPORT_CONFIG = {
   outputFile: "./reports/analysis_report.md",
   debugDir: "./debug",
   progressFile: "./report_progress.json",
-  
+  questionsConfigFile: "./analysis-scripts/questions-config.json",
+
   maxResponsesPerBatch: 1000,
   skipFailedBatches: true,
-  
-  // Question mappings - customize based on your CSV structure
-  questionMappings: {
-    "Q1": {
-      column: "Q1: In the last 6 to 12 months, what is one improvement that you have led in your school?",
-      analysisType: "List of improvements",
-      shortName: "Changes in Last 6-12 Months",
-    },
-    "Q2": {
-      column: "Q2: How did you get the idea for this improvement?",
-      analysisType: "List of reasons/motivations behind improvements",
-      shortName: "Ideas and Motivations",
-    },
-    "Q3": {
-      column: "Q3. What did you do to implement this improvement?",
-      analysisType: "Steps taken to implement the improvement",
-      shortName: "Implementation Steps",
-    },
-    "Q4": {
-      column: "Q4: What helped you implement this improvement in your school?",
-      analysisType: "List of things that helped",
-      shortName: "Enabling Factors",
-    },
-    "Q5": {
-      column: "Q5: In the next 3-6 months, do you plan to do anything more for the improvement you led?",
-      analysisType: "List of plans for improvements",
-      shortName: "Plans for Current Improvement",
-    },
-    "Q6": {
-      column: "Q6: What are some challenges you face while implementing improvements in your school?",
-      analysisType: "List of challenges",
-      shortName: "Challenges Faced",
-    },
-    "Q7": {
-      column: "Q7: What are some other improvements you are planning in your school in the next 3-6 months?",
-      analysisType: "List of planned improvements",
-      shortName: "Other New Improvements Planned",
-    },
-    "Q8": {
-      column: "Q8: What support do you need to implement these improvements in your school?",
-      analysisType: "List of support required",
-      shortName: "Support Needed",
-    },
-  },
+
+  // Question mappings loaded from config file
+  questionMappings: {},
   districtColumn: "District",
 };
+
+/**
+ * Load question mappings from questions-config.json
+ * Maps to the format needed for district report generation
+ */
+function loadQuestionMappings() {
+  const configPath = REPORT_CONFIG.questionsConfigFile;
+  const fsSync = require('fs');
+
+  if (!fsSync.existsSync(configPath)) {
+    throw new Error(`Questions config file not found: ${configPath}`);
+  }
+
+  try {
+    const configData = JSON.parse(fsSync.readFileSync(configPath, 'utf8'));
+    const mappings = {};
+
+    configData.questions.forEach((q) => {
+      mappings[q.id.toUpperCase()] = {
+        column: q.csv_column,
+        analysisType: q.analysis_type || `Analysis of ${q.question_text}`,
+        shortName: q.section || `Question ${q.id.toUpperCase()}`,
+      };
+    });
+
+    return mappings;
+  } catch (err) {
+    throw new Error(`Failed to load questions config: ${err.message}`);
+  }
+}
 
 // ==================== STATE & PROGRESS ====================
 class ReportState {
@@ -399,12 +389,18 @@ async function main() {
   await fs.mkdir(path.dirname(REPORT_CONFIG.outputFile), { recursive: true });
   await fs.mkdir(REPORT_CONFIG.debugDir, { recursive: true });
 
+  // Load question mappings from config
+  console.log("⚙️  Loading questions configuration...");
+  REPORT_CONFIG.questionMappings = loadQuestionMappings();
+  console.log(`✓ Loaded ${Object.keys(REPORT_CONFIG.questionMappings).length} questions\n`);
+
   await logger.info("=== Report Generation Started ===", {
     inputCsv: REPORT_CONFIG.inputCsv,
     outputFile: REPORT_CONFIG.outputFile,
     model: config.api.model,
     apiKeys: apiManager.getKeyCount(),
     maxBatchSize: REPORT_CONFIG.maxResponsesPerBatch,
+    questionsLoaded: Object.keys(REPORT_CONFIG.questionMappings).length,
   });
 
   // Read and parse CSV

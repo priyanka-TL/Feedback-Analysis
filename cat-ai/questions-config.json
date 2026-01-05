@@ -15,8 +15,8 @@
         {
           "name": "category_2",
           "type": "enum",
-          "description": "Either NLF, Non-NLF or Not Identified",
-          "enum": ["NLF", "Non-NLF", "Not Identified"],
+          "description": "Either LNF, Non-LNF or Not Identified",
+          "enum": ["LNF", "Non-LNF", "Not Identified"],
           "allow_multiple_categories": false,
           "allow_new_categories": false
         },

@@ -148,30 +148,15 @@ function loadMapping() {
  */
 function fixTypos(text) {
   if (!text || !options.fixTypos) return text;
-  
-  return validator.fixCommonTypos(text);
-}
 
-/**
- * Fix empty response categorization
- */
-function fixEmptyResponseCategory(row, questionCol, categoryCol) {
-  const response = row[questionCol];
-  const category = row[categoryCol];
+  let fixed = validator.fixCommonTypos(text);
 
-  // If response is empty but category is not
-  if (validator.isEmpty(response) && category && category !== 'NO RESPONSE') {
-    logger.debug(`Fixed empty response category for ${questionCol}`);
-    return 'NO RESPONSE';
+  // Specific typo fix: NO RESPOSNE → NO RESPONSE
+  if (fixed && fixed.trim() === 'NO RESPOSNE') {
+    fixed = 'NO RESPONSE';
   }
 
-  // If response exists but category is empty or invalid
-  if (!validator.isEmpty(response) && (!category || validator.isEmpty(category))) {
-    logger.debug(`Flagged missing category for ${questionCol}`);
-    return 'NEEDS CATEGORIZATION';
-  }
-
-  return category;
+  return fixed;
 }
 
 /**
@@ -204,7 +189,7 @@ function normalizeCategory(category) {
 /**
  * Process a single row
  */
-function processRow(row, mapping, stats) {
+function processRow(row, mapping, stats, rowIndex) {
   let modified = false;
 
   for (const [questionCol, categoryCol] of Object.entries(mapping)) {
@@ -215,6 +200,19 @@ function processRow(row, mapping, stats) {
 
     const originalResponse = row[questionCol];
     const originalCategory = row[categoryCol];
+
+    // Fix specific typo: NO RESPOSNE → NO RESPONSE
+    if (originalCategory && originalCategory.trim() === 'NO RESPOSNE') {
+      row[categoryCol] = 'NO RESPONSE';
+      stats.typoFixes++;
+
+      // Track this specific typo fix
+      const key = `${categoryCol}: "NO RESPOSNE" → "NO RESPONSE"`;
+      stats.typoFixDetails[key] = (stats.typoFixDetails[key] || 0) + 1;
+
+      logger.debug(`Row ${rowIndex + 2}: Fixed typo in ${categoryCol}: "NO RESPOSNE" → "NO RESPONSE"`);
+      modified = true;
+    }
 
     // Fix typos in response
     if (originalResponse) {
@@ -228,11 +226,25 @@ function processRow(row, mapping, stats) {
 
     // Fix empty response categorization
     if (options.fixEmpty) {
-      const fixedCategory = fixEmptyResponseCategory(row, questionCol, categoryCol);
-      if (fixedCategory !== originalCategory) {
-        row[categoryCol] = fixedCategory;
-        stats.categoriesFixed++;
-        modified = true;
+      const response = row[questionCol];
+      const category = row[categoryCol];
+
+      // If response is empty but category is not NO RESPONSE
+      if (validator.isEmpty(response)) {
+        if (category && category.trim() !== '' && category.trim() !== 'NO RESPONSE') {
+          const oldValue = category;
+
+          // Track statistics for changes
+          const changeKey = `${categoryCol}: "${oldValue}" → "NO RESPONSE"`;
+          stats.changeDetails[changeKey] = (stats.changeDetails[changeKey] || 0) + 1;
+
+          // Fix the category
+          row[categoryCol] = 'NO RESPONSE';
+          stats.emptyResponseFixes++;
+          modified = true;
+
+          logger.debug(`Row ${rowIndex + 2}: Fixed ${categoryCol} from "${oldValue}" to "NO RESPONSE"`);
+        }
       }
     }
 
@@ -261,8 +273,21 @@ function generateReport(data, mapping, stats) {
   const report = {
     totalRows: data.length,
     ...stats,
-    questions: {}
+    questions: {},
+    columnNoResponseCount: {}
   };
+
+  // Get all category columns
+  const categoryColumns = Object.values(mapping);
+
+  // Count NO RESPONSE per column
+  categoryColumns.forEach(catCol => {
+    if (catCol in data[0]) {
+      report.columnNoResponseCount[catCol] = data.filter(
+        row => row[catCol] && row[catCol].trim() === 'NO RESPONSE'
+      ).length;
+    }
+  });
 
   // Analyze each question
   for (const [questionCol, categoryCol] of Object.entries(mapping)) {
@@ -275,6 +300,7 @@ function generateReport(data, mapping, stats) {
       emptyResponses: 0,
       categorized: 0,
       needsCategorization: 0,
+      noResponse: 0,
       categories: {}
     };
 
@@ -291,7 +317,9 @@ function generateReport(data, mapping, stats) {
       if (category) {
         if (category === 'NEEDS CATEGORIZATION') {
           questionStats.needsCategorization++;
-        } else if (category !== 'NO RESPONSE') {
+        } else if (category === 'NO RESPONSE') {
+          questionStats.noResponse++;
+        } else {
           questionStats.categorized++;
           questionStats.categories[category] = (questionStats.categories[category] || 0) + 1;
         }
@@ -313,9 +341,24 @@ function saveReport(report, reportPath) {
 ## Summary
 - Total Rows: ${report.totalRows}
 - Rows Modified: ${report.rowsModified}
-- Typos Fixed: ${report.typosFixed}
-- Categories Fixed: ${report.categoriesFixed}
-- Categories Normalized: ${report.categoriesNormalized}
+- Typo Fixes (NO RESPOSNE): ${report.typoFixes || 0}
+- Response Typos Fixed: ${report.typosFixed || 0}
+- Empty Response Fixes: ${report.emptyResponseFixes || 0}
+- Categories Normalized: ${report.categoriesNormalized || 0}
+- Total Changes: ${(report.typoFixes || 0) + (report.emptyResponseFixes || 0)}
+
+${report.typoFixDetails && Object.keys(report.typoFixDetails).length > 0 ? `
+## Typo Fix Details
+${Object.entries(report.typoFixDetails).sort((a, b) => b[1] - a[1]).map(([key, count]) => `- ${count}x ${key}`).join('\n')}
+` : ''}
+
+${report.changeDetails && Object.keys(report.changeDetails).length > 0 ? `
+## Empty Response Fix Details
+${Object.entries(report.changeDetails).sort((a, b) => b[1] - a[1]).map(([key, count]) => `- ${count}x ${key}`).join('\n')}
+` : ''}
+
+## Column-wise NO RESPONSE Count (After Fixes)
+${Object.entries(report.columnNoResponseCount).sort((a, b) => b[1] - a[1]).map(([col, count]) => `- ${col}: ${count}`).join('\n')}
 
 ## Question Statistics
 
@@ -323,11 +366,12 @@ ${Object.entries(report.questions).map(([question, stats]) => `
 ### ${question}
 - Total Responses: ${stats.totalResponses}
 - Empty Responses: ${stats.emptyResponses}
+- NO RESPONSE: ${stats.noResponse}
 - Categorized: ${stats.categorized}
 - Needs Categorization: ${stats.needsCategorization}
 
-Categories Distribution:
-${Object.entries(stats.categories).map(([cat, count]) => `- ${cat}: ${count}`).join('\n')}
+${Object.keys(stats.categories).length > 0 ? `Categories Distribution:
+${Object.entries(stats.categories).sort((a, b) => b[1] - a[1]).map(([cat, count]) => `- ${cat}: ${count}`).join('\n')}` : ''}
 `).join('\n')}
 `;
 
@@ -368,17 +412,20 @@ async function main() {
 
     // Process rows
     logger.section('Processing Rows');
-    
+
     const stats = {
       rowsModified: 0,
       typosFixed: 0,
-      categoriesFixed: 0,
-      categoriesNormalized: 0
+      typoFixes: 0,
+      emptyResponseFixes: 0,
+      categoriesNormalized: 0,
+      typoFixDetails: {},
+      changeDetails: {}
     };
 
     data.forEach((row, index) => {
-      processRow(row, mapping, stats);
-      
+      processRow(row, mapping, stats, index);
+
       if ((index + 1) % 100 === 0) {
         logger.progress(index + 1, data.length, `Modified: ${stats.rowsModified}`);
       }
@@ -398,14 +445,53 @@ async function main() {
     await csvHandler.write(config.paths.output, data);
 
     // Log summary
-    logger.complete('Filtering Complete', {
-      'Total Rows': report.totalRows,
-      'Rows Modified': stats.rowsModified,
-      'Typos Fixed': stats.typosFixed,
-      'Categories Fixed': stats.categoriesFixed,
-      'Categories Normalized': stats.categoriesNormalized
-    });
+    logger.section('Summary');
+    logger.info('='.repeat(60));
+    logger.info(`Total Rows: ${report.totalRows}`);
+    logger.info(`Rows Modified: ${stats.rowsModified}`);
+    logger.info('');
+    logger.info(`Typo Fixes (NO RESPOSNE → NO RESPONSE): ${stats.typoFixes}`);
+    logger.info(`Empty Response Fixes: ${stats.emptyResponseFixes}`);
+    logger.info(`Categories Normalized: ${stats.categoriesNormalized}`);
+    logger.info(`Total Changes: ${stats.typoFixes + stats.emptyResponseFixes}`);
 
+    // Show detailed breakdown if there are changes
+    if (Object.keys(stats.changeDetails).length > 0) {
+      logger.info('');
+      logger.info('-'.repeat(60));
+      logger.info('BREAKDOWN OF EMPTY RESPONSE FIXES:');
+      logger.info('-'.repeat(60));
+      Object.entries(stats.changeDetails)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([key, count]) => {
+          logger.info(`  ${count}x ${key}`);
+        });
+    }
+
+    if (Object.keys(stats.typoFixDetails).length > 0) {
+      logger.info('');
+      logger.info('-'.repeat(60));
+      logger.info('TYPO FIX DETAILS:');
+      logger.info('-'.repeat(60));
+      Object.entries(stats.typoFixDetails)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([key, count]) => {
+          logger.info(`  ${count}x ${key}`);
+        });
+    }
+
+    // Show column-wise NO RESPONSE counts
+    logger.info('');
+    logger.info('-'.repeat(60));
+    logger.info('TOTAL "NO RESPONSE" COUNT PER COLUMN (AFTER FIXES):');
+    logger.info('-'.repeat(60));
+    Object.entries(report.columnNoResponseCount)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([column, count]) => {
+        logger.info(`  ${column}: ${count}`);
+      });
+
+    logger.info('='.repeat(60));
     logger.info('\nCSV filtering complete! ✓');
 
   } catch (error) {

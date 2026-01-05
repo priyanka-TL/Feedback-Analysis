@@ -2,20 +2,24 @@
   "questions": [
     {
       "id": "q1",
-      "csv_column": "Q1: In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general",
-      "question_text": "In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general",
+      "csv_column": "Q1: In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general.",
+      "question_text": "In the last 6 to 12 months, what is one improvement that you have led in your school? This can be in students, teachers, parents or the school in general.",
+      "section": "Recent Changes",
+      "analysis_type": "List of improvements",
       "response_fields": [
         {
           "name": "category_1",
           "type": "string",
-          "description": "Single category from: Classroom, Student, Teacher, School, Parental Engagement, Not Identified",
+          "description": "Primary Category",
+          "subtext": "Primary Category",
           "allow_multiple_categories": true,
           "allow_new_categories": true
         },
         {
           "name": "category_2",
           "type": "enum",
-          "description": "Either LNF, Non-LNF or Not Identified",
+          "description": "Secondary Category",
+          "subtext": "Secondary Category",
           "enum": ["LNF", "Non-LNF", "Not Identified"],
           "allow_multiple_categories": false,
           "allow_new_categories": false
@@ -32,6 +36,8 @@
       "id": "q2",
       "csv_column": "Q2: How did you get the idea for this improvement?",
       "question_text": "How did you get the idea for this improvement?",
+      "section": "Change Inspiration",
+      "analysis_type": "List of reasons/motivations behind improvements",
       "response_fields": [
         {
           "name": "categories",
@@ -52,6 +58,8 @@
       "id": "q3",
       "csv_column": "Q3. What did you do to implement this improvement?",
       "question_text": "What did you do to implement this improvement?",
+      "section": "Implementation Steps",
+      "analysis_type": "Steps taken to implement the improvement",
       "response_fields": [
         {
           "name": "category",
@@ -77,6 +85,8 @@
       "id": "q4",
       "csv_column": "Q4: What helped you implement this improvement in your school?",
       "question_text": "What helped you implement this improvement in your school?",
+      "section": "Enabling Factors",
+      "analysis_type": "List of things that helped",
       "response_fields": [
         {
           "name": "categories",
@@ -97,6 +107,8 @@
       "id": "q5",
       "csv_column": "Q5: In the next 3-6 months, do you plan to do anything more for the improvement you led?",
       "question_text": "In the next 3-6 months, do you plan to do anything more for the improvement you led?",
+      "section": "Plans for Current Improvement",
+      "analysis_type": "List of plans for improvements",
       "response_fields": [
         {
           "name": "category",
@@ -122,6 +134,8 @@
       "id": "q6",
       "csv_column": "Q6: What are some challenges you face while implementing improvements in your school?",
       "question_text": "What are some challenges you face while implementing improvements in your school?",
+      "section": "Challenges",
+      "analysis_type": "List of challenges",
       "response_fields": [
         {
           "name": "categories",
@@ -142,6 +156,8 @@
       "id": "q7",
       "csv_column": "Q7: What are some other improvements you are planning in your school in the next 3-6 months?",
       "question_text": "What are some other improvements you are planning in your school in the next 3-6 months?",
+      "section": "Planned Changes",
+      "analysis_type": "List of planned improvements",
       "response_fields": [
         {
           "name": "categories",
@@ -162,6 +178,8 @@
       "id": "q8",
       "csv_column": "Q8: What support do you need to implement these improvements in your school?",
       "question_text": "What support do you need to implement these improvements in your school?",
+      "section": "Support Needs",
+      "analysis_type": "List of support required",
       "response_fields": [
         {
           "name": "categories",

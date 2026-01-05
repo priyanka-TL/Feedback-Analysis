@@ -22,6 +22,13 @@ class APIManager {
       resetTime: Date.now() + 60000 // Reset every minute
     };
 
+    // Token usage statistics
+    this.totalTokens = {
+      promptTokens: 0,
+      candidatesTokens: 0,
+      totalTokens: 0
+    };
+
     // Initialize models for all keys
     this._initializeModels();
   }
@@ -147,6 +154,16 @@ class APIManager {
 
         // Extract response text
         const responseText = result.response.text();
+        
+        // Track token usage if available
+        if (result.response.usageMetadata) {
+          const usage = result.response.usageMetadata;
+          this.totalTokens.promptTokens += usage.promptTokenCount || 0;
+          this.totalTokens.candidatesTokens += usage.candidatesTokenCount || 0;
+          this.totalTokens.totalTokens += usage.totalTokenCount || 0;
+          
+          this.logger.debug(`Token usage: ${usage.totalTokenCount || 0} (prompt: ${usage.promptTokenCount || 0}, response: ${usage.candidatesTokenCount || 0})`);
+        }
         
         // Parse JSON response
         try {
@@ -291,7 +308,57 @@ class APIManager {
       totalKeys: this.apiKeys.length,
       successRate: this.requestCount > 0 
         ? (((this.requestCount - this.errorCount) / this.requestCount) * 100).toFixed(1) + '%'
-        : '0%'
+        : '0%',
+      tokenUsage: {
+        promptTokens: this.totalTokens.promptTokens,
+        candidatesTokens: this.totalTokens.candidatesTokens,
+        totalTokens: this.totalTokens.totalTokens
+      }
+    };
+  }
+
+  /**
+   * Calculate cost based on token usage
+   * Model pricing (as of 2024):
+   * - gemini-2.0-flash-exp: Free tier
+   * - gemini-1.5-flash: $0.075 per 1M input tokens, $0.30 per 1M output tokens
+   * - gemini-1.5-pro: $3.50 per 1M input tokens, $10.50 per 1M output tokens
+   * @returns {object} Cost breakdown
+   */
+  calculateCost() {
+    const model = this.config.api.model.toLowerCase();
+    let inputCostPer1M = 0;
+    let outputCostPer1M = 0;
+
+    // Determine pricing based on model
+    if (model.includes('flash-exp') || model.includes('2.0-flash-exp')) {
+      // Free tier
+      inputCostPer1M = 0;
+      outputCostPer1M = 0;
+    } else if (model.includes('1.5-flash') || model.includes('flash')) {
+      inputCostPer1M = 0.075;
+      outputCostPer1M = 0.30;
+    } else if (model.includes('1.5-pro') || model.includes('pro')) {
+      inputCostPer1M = 3.50;
+      outputCostPer1M = 10.50;
+    }
+
+    const inputCost = (this.totalTokens.promptTokens / 1000000) * inputCostPer1M;
+    const outputCost = (this.totalTokens.candidatesTokens / 1000000) * outputCostPer1M;
+    const totalCost = inputCost + outputCost;
+
+    return {
+      inputTokens: this.totalTokens.promptTokens,
+      outputTokens: this.totalTokens.candidatesTokens,
+      totalTokens: this.totalTokens.totalTokens,
+      inputCostUSD: parseFloat(inputCost.toFixed(6)),
+      outputCostUSD: parseFloat(outputCost.toFixed(6)),
+      totalCostUSD: parseFloat(totalCost.toFixed(6)),
+      model: this.config.api.model,
+      pricing: {
+        inputCostPer1M: inputCostPer1M,
+        outputCostPer1M: outputCostPer1M
+      }
     };
   }
 }

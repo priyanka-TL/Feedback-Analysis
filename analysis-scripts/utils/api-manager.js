@@ -1,18 +1,18 @@
 /**
- * API Manager Utility
+ * Multi-Provider API Manager
  * 
- * Manages Gemini API interactions with key rotation, rate limiting, and retry logic.
+ * Manages API interactions for multiple providers (Gemini and AWS Bedrock)
+ * with key rotation, rate limiting, and retry logic.
  */
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { BedrockRuntimeClient, InvokeModelCommand } = require("@aws-sdk/client-bedrock-runtime");
 
 class APIManager {
   constructor(config, logger) {
     this.config = config;
     this.logger = logger;
-    this.apiKeys = config.api.keys;
-    this.currentKeyIndex = 0;
-    this.models = new Map();
+    this.provider = config.api.provider.toLowerCase();
     this.requestCount = 0;
     this.errorCount = 0;
     
@@ -29,24 +29,41 @@ class APIManager {
       totalTokens: 0
     };
 
-    // Initialize models for all keys
-    this._initializeModels();
+    // Initialize the appropriate provider
+    this._initializeProvider();
   }
 
   /**
-   * Initialize Gemini models for all API keys
+   * Initialize API provider based on configuration
    */
-  _initializeModels() {
+  _initializeProvider() {
+    if (this.provider === 'gemini') {
+      this._initializeGemini();
+    } else if (this.provider === 'bedrock') {
+      this._initializeBedrock();
+    } else {
+      throw new Error(`Unsupported API provider: ${this.provider}`);
+    }
+  }
+
+  /**
+   * Initialize Gemini models
+   */
+  _initializeGemini() {
+    this.apiKeys = this.config.api.gemini.keys;
+    this.currentKeyIndex = 0;
+    this.models = new Map();
+
     if (!this.apiKeys || this.apiKeys.length === 0) {
-      throw new Error('No API keys provided');
+      throw new Error('No Gemini API keys provided');
     }
 
     this.apiKeys.forEach((key, index) => {
       const genAI = new GoogleGenerativeAI(key);
       const model = genAI.getGenerativeModel({
-        model: this.config.api.model,
+        model: this.config.api.gemini.model,
         generationConfig: {
-          temperature: this.config.api.temperature,
+          temperature: this.config.api.gemini.temperature,
           responseMimeType: "application/json"
         }
       });
@@ -54,28 +71,58 @@ class APIManager {
       this.models.set(index, model);
     });
 
-    this.logger.info(`Initialized ${this.apiKeys.length} API key(s)`);
+    this.logger.info(`Initialized Gemini provider with ${this.apiKeys.length} API key(s)`);
+    this.logger.info(`Model: ${this.config.api.gemini.model}`);
   }
 
   /**
-   * Get current active model
-   * @returns {object} Gemini model instance
+   * Initialize AWS Bedrock client
+   */
+  _initializeBedrock() {
+    const bedrockConfig = this.config.api.bedrock;
+
+    if (!bedrockConfig.accessKeyId || !bedrockConfig.secretAccessKey) {
+      throw new Error('AWS credentials not provided');
+    }
+
+    this.bedrockClient = new BedrockRuntimeClient({
+      region: bedrockConfig.region,
+      credentials: {
+        accessKeyId: bedrockConfig.accessKeyId,
+        secretAccessKey: bedrockConfig.secretAccessKey
+      }
+    });
+
+    this.bedrockModel = bedrockConfig.model;
+    this.bedrockModelVersion = bedrockConfig.modelVersion || 'bedrock-2023-05-31';
+    this.bedrockMaxTokens = bedrockConfig.maxTokens;
+    this.bedrockTemperature = bedrockConfig.temperature;
+
+    this.logger.info(`Initialized AWS Bedrock provider`);
+    this.logger.info(`Region: ${bedrockConfig.region}`);
+    this.logger.info(`Model: ${this.bedrockModel}`);
+    this.logger.info(`Model Version: ${this.bedrockModelVersion}`);
+  }
+
+  /**
+   * Get current active Gemini model
    */
   _getCurrentModel() {
     return this.models.get(this.currentKeyIndex);
   }
 
   /**
-   * Rotate to next API key
+   * Rotate to next Gemini API key
    */
   _rotateKey() {
+    if (this.provider !== 'gemini') return;
+    
     this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
     this.logger.debug(`Rotated to API key ${this.currentKeyIndex + 1}/${this.apiKeys.length}`);
   }
 
   /**
    * Check and update token usage for rate limiting
-   * @param {number} estimatedTokens - Estimated tokens for this request
    */
   _checkRateLimit(estimatedTokens = 1000) {
     const now = Date.now();
@@ -100,22 +147,134 @@ class APIManager {
 
   /**
    * Sleep for specified milliseconds
-   * @param {number} ms - Milliseconds to sleep
    */
   async _sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
+   * Generate content with Gemini
+   */
+  async _generateWithGemini(prompt, schema, options) {
+    const model = this._getCurrentModel();
+
+    let result;
+    if (schema) {
+      result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: this.config.api.gemini.temperature,
+          responseMimeType: "application/json",
+          responseSchema: schema
+        }
+      });
+    } else {
+      result = await model.generateContent(prompt);
+    }
+
+    // Extract response text
+    const responseText = result.response.text();
+    
+    // Track token usage if available
+    if (result.response.usageMetadata) {
+      const usage = result.response.usageMetadata;
+      this.totalTokens.promptTokens += usage.promptTokenCount || 0;
+      this.totalTokens.candidatesTokens += usage.candidatesTokenCount || 0;
+      this.totalTokens.totalTokens += usage.totalTokenCount || 0;
+      
+      this.logger.debug(`Token usage: ${usage.totalTokenCount || 0} (prompt: ${usage.promptTokenCount || 0}, response: ${usage.candidatesTokenCount || 0})`);
+    }
+    
+    // Parse JSON response
+    try {
+      return JSON.parse(responseText);
+    } catch (parseError) {
+      this.logger.warn('Failed to parse JSON response, returning raw text');
+      return { text: responseText };
+    }
+  }
+
+  /**
+   * Generate content with AWS Bedrock (Claude)
+   */
+  async _generateWithBedrock(prompt, schema, options) {
+    // Build the request body for Claude
+    const requestBody = {
+      anthropic_version: this.bedrockModelVersion,
+      max_tokens: this.bedrockMaxTokens,
+      temperature: this.bedrockTemperature,
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
+    };
+
+    // If schema is provided, add it to the prompt as instructions
+    if (schema) {
+      const schemaInstructions = `\n\nIMPORTANT: You must respond with valid JSON that matches this exact schema:\n${JSON.stringify(schema, null, 2)}\n\nRespond ONLY with the JSON object, no additional text.`;
+      requestBody.messages[0].content += schemaInstructions;
+    }
+
+    const command = new InvokeModelCommand({
+      modelId: this.bedrockModel,
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify(requestBody)
+    });
+
+    const response = await this.bedrockClient.send(command);
+    
+    // Parse the response
+    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+    
+    // Track token usage
+    if (responseBody.usage) {
+      this.totalTokens.promptTokens += responseBody.usage.input_tokens || 0;
+      this.totalTokens.candidatesTokens += responseBody.usage.output_tokens || 0;
+      this.totalTokens.totalTokens += (responseBody.usage.input_tokens || 0) + (responseBody.usage.output_tokens || 0);
+      
+      this.logger.debug(`Token usage: ${responseBody.usage.input_tokens + responseBody.usage.output_tokens} (prompt: ${responseBody.usage.input_tokens}, response: ${responseBody.usage.output_tokens})`);
+    }
+
+    // Extract the content
+    const content = responseBody.content?.[0]?.text || '';
+    
+    // Try to parse as JSON if schema was provided
+    if (schema) {
+      try {
+        // Remove markdown code blocks if present
+        const cleanContent = content
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/, '')
+          .replace(/```\s*$/, '')
+          .trim();
+        return JSON.parse(cleanContent);
+      } catch (parseError) {
+        this.logger.warn('Failed to parse JSON response from Bedrock');
+        // Try to extract JSON from the text
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            return JSON.parse(jsonMatch[0]);
+          } catch (e) {
+            this.logger.error('Could not extract valid JSON from response');
+          }
+        }
+        return { text: content };
+      }
+    }
+    
+    return { text: content };
+  }
+
+  /**
    * Generate content with retry logic
-   * @param {string} prompt - Prompt text
-   * @param {object} schema - Response schema (optional)
-   * @param {object} options - Additional options
-   * @returns {Promise<object>} API response
    */
   async generateContent(prompt, schema = null, options = {}) {
     const maxRetries = options.maxRetries || this.config.api.maxRetries;
-    const estimatedTokens = Math.ceil(prompt.length / 4); // Rough estimate
+    const estimatedTokens = Math.ceil(prompt.length / 4);
     
     let lastError = null;
     
@@ -132,68 +291,47 @@ class APIManager {
           await this._sleep(this.config.api.requestDelay);
         }
 
-        // Get current model
-        const model = this._getCurrentModel();
-
-        // Generate content with schema if provided
+        // Generate content based on provider
         let result;
-        if (schema) {
-          result = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: this.config.api.temperature,
-              responseMimeType: "application/json",
-              responseSchema: schema
-            }
-          });
-        } else {
-          result = await model.generateContent(prompt);
+        if (this.provider === 'gemini') {
+          result = await this._generateWithGemini(prompt, schema, options);
+        } else if (this.provider === 'bedrock') {
+          result = await this._generateWithBedrock(prompt, schema, options);
         }
 
         this.requestCount++;
-
-        // Extract response text
-        const responseText = result.response.text();
-        
-        // Track token usage if available
-        if (result.response.usageMetadata) {
-          const usage = result.response.usageMetadata;
-          this.totalTokens.promptTokens += usage.promptTokenCount || 0;
-          this.totalTokens.candidatesTokens += usage.candidatesTokenCount || 0;
-          this.totalTokens.totalTokens += usage.totalTokenCount || 0;
-          
-          this.logger.debug(`Token usage: ${usage.totalTokenCount || 0} (prompt: ${usage.promptTokenCount || 0}, response: ${usage.candidatesTokenCount || 0})`);
-        }
-        
-        // Parse JSON response
-        try {
-          return JSON.parse(responseText);
-        } catch (parseError) {
-          this.logger.warn('Failed to parse JSON response, returning raw text');
-          return { text: responseText };
-        }
+        return result;
 
       } catch (error) {
         lastError = error;
         this.errorCount++;
 
-        // Log the error
         this.logger.warn(`API request failed (attempt ${attempt + 1}/${maxRetries}): ${error.message}`);
 
-        // Handle rate limiting
-        if (error.message.includes('429') || error.message.includes('RATE_LIMIT')) {
-          this.logger.warn('Rate limit hit, waiting before retry');
-          await this._sleep(this.config.api.rateLimitDelay);
-          this._rotateKey(); // Try next key
-          continue;
-        }
+        // Handle provider-specific errors
+        if (this.provider === 'gemini') {
+          // Handle Gemini rate limiting
+          if (error.message.includes('429') || error.message.includes('RATE_LIMIT')) {
+            this.logger.warn('Rate limit hit, waiting before retry');
+            await this._sleep(this.config.api.rateLimitDelay);
+            this._rotateKey();
+            continue;
+          }
 
-        // Handle quota exceeded
-        if (error.message.includes('quota') || error.message.includes('RESOURCE_EXHAUSTED')) {
-          this.logger.warn('Quota exceeded, rotating to next key');
-          this._rotateKey();
-          await this._sleep(5000);
-          continue;
+          // Handle quota exceeded
+          if (error.message.includes('quota') || error.message.includes('RESOURCE_EXHAUSTED')) {
+            this.logger.warn('Quota exceeded, rotating to next key');
+            this._rotateKey();
+            await this._sleep(5000);
+            continue;
+          }
+        } else if (this.provider === 'bedrock') {
+          // Handle Bedrock throttling
+          if (error.name === 'ThrottlingException' || error.message.includes('throttl')) {
+            this.logger.warn('Bedrock throttling, waiting before retry');
+            await this._sleep(this.config.api.rateLimitDelay);
+            continue;
+          }
         }
 
         // Exponential backoff for other errors
@@ -205,62 +343,17 @@ class APIManager {
       }
     }
 
-    // All retries failed
     throw new Error(`API request failed after ${maxRetries} attempts: ${lastError?.message || 'Unknown error'}`);
   }
 
   /**
-   * Generate batch of content with parallel processing
-   * @param {Array<object>} items - Array of {prompt, schema} objects
-   * @param {number} concurrency - Number of concurrent requests
-   * @returns {Promise<Array>} Array of responses
-   */
-  async generateBatch(items, concurrency = 3) {
-    const results = [];
-    const errors = [];
-
-    this.logger.info(`Processing batch of ${items.length} items with concurrency ${concurrency}`);
-
-    for (let i = 0; i < items.length; i += concurrency) {
-      const batch = items.slice(i, i + concurrency);
-      
-      const batchPromises = batch.map(async (item, index) => {
-        try {
-          const result = await this.generateContent(item.prompt, item.schema, item.options);
-          return { success: true, index: i + index, result };
-        } catch (error) {
-          this.logger.error(`Batch item ${i + index} failed: ${error.message}`);
-          return { success: false, index: i + index, error: error.message };
-        }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      
-      batchResults.forEach(br => {
-        if (br.success) {
-          results.push(br.result);
-        } else {
-          errors.push({ index: br.index, error: br.error });
-        }
-      });
-
-      this.logger.progress(i + batch.length, items.length, `Completed ${results.length}, Errors: ${errors.length}`);
-    }
-
-    return { results, errors };
-  }
-
-  /**
    * Build response schema for structured output
-   * @param {object} fields - Field definitions
-   * @returns {object} JSON schema
    */
   buildSchema(fields) {
     const properties = {};
     const required = [];
 
     for (const [fieldName, fieldConfig] of Object.entries(fields)) {
-      // Handle different field types
       if (fieldConfig.type === 'array' && fieldConfig.items) {
         properties[fieldName] = {
           type: 'array',
@@ -283,7 +376,6 @@ class APIManager {
         };
       }
 
-      // Add to required if specified
       if (fieldConfig.required !== false) {
         required.push(fieldName);
       }
@@ -298,14 +390,12 @@ class APIManager {
 
   /**
    * Get API usage statistics
-   * @returns {object} Usage stats
    */
   getStats() {
-    return {
+    const stats = {
+      provider: this.provider,
       totalRequests: this.requestCount,
       totalErrors: this.errorCount,
-      currentKeyIndex: this.currentKeyIndex + 1,
-      totalKeys: this.apiKeys.length,
       successRate: this.requestCount > 0 
         ? (((this.requestCount - this.errorCount) / this.requestCount) * 100).toFixed(1) + '%'
         : '0%',
@@ -315,32 +405,60 @@ class APIManager {
         totalTokens: this.totalTokens.totalTokens
       }
     };
+
+    if (this.provider === 'gemini') {
+      stats.currentKeyIndex = this.currentKeyIndex + 1;
+      stats.totalKeys = this.apiKeys.length;
+    }
+
+    return stats;
   }
 
   /**
-   * Calculate cost based on token usage
-   * Model pricing (as of 2024):
-   * - gemini-2.0-flash-exp: Free tier
-   * - gemini-1.5-flash: $0.075 per 1M input tokens, $0.30 per 1M output tokens
-   * - gemini-1.5-pro: $3.50 per 1M input tokens, $10.50 per 1M output tokens
-   * @returns {object} Cost breakdown
+   * Calculate cost based on token usage and provider
    */
   calculateCost() {
-    const model = this.config.api.model.toLowerCase();
     let inputCostPer1M = 0;
     let outputCostPer1M = 0;
+    let modelName = '';
 
-    // Determine pricing based on model
-    if (model.includes('flash-exp') || model.includes('2.0-flash-exp')) {
-      // Free tier
-      inputCostPer1M = 0;
-      outputCostPer1M = 0;
-    } else if (model.includes('1.5-flash') || model.includes('flash')) {
-      inputCostPer1M = 0.075;
-      outputCostPer1M = 0.30;
-    } else if (model.includes('1.5-pro') || model.includes('pro')) {
-      inputCostPer1M = 3.50;
-      outputCostPer1M = 10.50;
+    if (this.provider === 'gemini') {
+      modelName = this.config.api.gemini.model;
+      const model = modelName.toLowerCase();
+
+      if (model.includes('flash-exp') || model.includes('2.0-flash-exp')) {
+        inputCostPer1M = 0;
+        outputCostPer1M = 0;
+      } else if (model.includes('1.5-flash') || model.includes('flash')) {
+        inputCostPer1M = 0.075;
+        outputCostPer1M = 0.30;
+      } else if (model.includes('1.5-pro') || model.includes('pro')) {
+        inputCostPer1M = 3.50;
+        outputCostPer1M = 10.50;
+      }
+    } else if (this.provider === 'bedrock') {
+      modelName = this.bedrockModel;
+      
+      // Claude 3.5 Sonnet pricing (as of 2024)
+      if (modelName.includes('claude-3-5-sonnet')) {
+        inputCostPer1M = 3.00;
+        outputCostPer1M = 15.00;
+      }
+      // Claude 3 Opus pricing
+      else if (modelName.includes('claude-3-opus')) {
+        inputCostPer1M = 15.00;
+        outputCostPer1M = 75.00;
+      }
+      // Claude 3 Sonnet pricing
+      else if (modelName.includes('claude-3-sonnet')) {
+        inputCostPer1M = 3.00;
+        outputCostPer1M = 15.00;
+      }
+      // Claude 3 Haiku pricing
+      else if (modelName.includes('claude-3-haiku')) {
+        inputCostPer1M = 0.25;
+        outputCostPer1M = 1.25;
+      }
     }
 
     const inputCost = (this.totalTokens.promptTokens / 1000000) * inputCostPer1M;
@@ -348,13 +466,14 @@ class APIManager {
     const totalCost = inputCost + outputCost;
 
     return {
+      provider: this.provider,
       inputTokens: this.totalTokens.promptTokens,
       outputTokens: this.totalTokens.candidatesTokens,
       totalTokens: this.totalTokens.totalTokens,
       inputCostUSD: parseFloat(inputCost.toFixed(6)),
       outputCostUSD: parseFloat(outputCost.toFixed(6)),
       totalCostUSD: parseFloat(totalCost.toFixed(6)),
-      model: this.config.api.model,
+      model: modelName,
       pricing: {
         inputCostPer1M: inputCostPer1M,
         outputCostPer1M: outputCostPer1M

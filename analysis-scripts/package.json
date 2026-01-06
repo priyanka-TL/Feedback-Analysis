@@ -22,6 +22,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.962.0",
     "@google/generative-ai": "^0.21.0",
     "dotenv": "^16.4.5",
     "lodash": "^4.17.21",

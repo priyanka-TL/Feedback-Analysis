@@ -95,12 +95,20 @@ Strategies:
   batch: Fastest - processes multiple rows concurrently (experimental)
 
 Environment Variables:
-  API_KEYS             Comma-separated Gemini API keys (required)
-  MODEL_NAME           Gemini model name (default: gemini-2.0-flash-exp)
+  API_PROVIDER         API provider: 'gemini' or 'bedrock' (default: gemini)
+  API_KEYS             Comma-separated Gemini API keys (for Gemini)
+  AWS_ACCESS_KEY_ID    AWS access key (for Bedrock)
+  AWS_SECRET_ACCESS_KEY AWS secret key (for Bedrock)
+  MODEL_NAME           Model name (provider-specific)
   TEMPERATURE          Model temperature (default: 0.3)
 
 Examples:
-  node 1_improve-grammar.js --input data.csv --output improved.csv
+  # Using Gemini
+  API_PROVIDER=gemini node 1_improve-grammar.js --input data.csv --output improved.csv
+  
+  # Using Bedrock (Claude)
+  API_PROVIDER=bedrock node 1_improve-grammar.js --input data.csv --output improved.csv
+  
   node 1_improve-grammar.js --resume --strategy full
   node 1_improve-grammar.js --clear --backup true --strategy smart
       `);
@@ -452,7 +460,14 @@ async function main() {
     logger.section('Grammar Improvement Script - OPTIMIZED');
     logger.info(`Input: ${config.paths.input}`);
     logger.info(`Output: ${config.paths.output}`);
-    logger.info(`Model: ${config.api.model}`);
+    logger.info(`Provider: ${config.api.provider}`);
+    if (config.api.provider === 'gemini') {
+      logger.info(`Model: ${config.api.gemini.model}`);
+      logger.info(`API Keys: ${config.api.gemini.keys.length}`);
+    } else if (config.api.provider === 'bedrock') {
+      logger.info(`Model: ${config.api.bedrock.model}`);
+      logger.info(`Region: ${config.api.bedrock.region}`);
+    }
     logger.info(`Strategy: ${options.strategy}`);
 
     // Create backup if requested
@@ -598,15 +613,20 @@ async function main() {
     logger.info(`  Rows Skipped: ${totalSkipped}`);
     logger.info(`  Rows with Errors: ${totalErrors}`);
     logger.info(`  Total Responses Improved: ${totalResponsesImproved}`);
+    logger.info(`  Provider: ${apiStats.provider}`);
     logger.info(`  API Requests: ${apiStats.totalRequests}`);
     logger.info(`  API Errors: ${apiStats.totalErrors}`);
     logger.info(`  Success Rate: ${apiStats.successRate}`);
+    if (apiStats.provider === 'gemini' && apiStats.currentKeyIndex !== undefined) {
+      logger.info(`  Current Key Index: ${apiStats.currentKeyIndex}`);
+    }
 
     logger.info('\n💰 Token Usage & Cost:');
+    logger.info(`  Provider: ${costInfo.provider}`);
+    logger.info(`  Model: ${costInfo.model}`);
     logger.info(`  Input Tokens: ${costInfo.inputTokens.toLocaleString()}`);
     logger.info(`  Output Tokens: ${costInfo.outputTokens.toLocaleString()}`);
     logger.info(`  Total Tokens: ${costInfo.totalTokens.toLocaleString()}`);
-    logger.info(`  Model: ${costInfo.model}`);
     logger.info(`  Input Cost: $${costInfo.inputCostUSD.toFixed(4)}`);
     logger.info(`  Output Cost: $${costInfo.outputCostUSD.toFixed(4)}`);
     logger.info(`  Total Cost: $${costInfo.totalCostUSD.toFixed(4)}`);

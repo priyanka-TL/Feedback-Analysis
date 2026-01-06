@@ -69,13 +69,22 @@ Options:
   --help               Show this help message
 
 Environment Variables:
-  API_KEYS             Comma-separated Gemini API keys (required)
-  MODEL_NAME           Gemini model name (default: gemini-2.0-flash-exp)
+  API_PROVIDER         API provider: 'gemini' or 'bedrock' (default: gemini)
+  API_KEYS             Comma-separated Gemini API keys (for Gemini)
+  AWS_ACCESS_KEY_ID    AWS access key (for Bedrock)
+  AWS_SECRET_ACCESS_KEY AWS secret key (for Bedrock)
+  MODEL_NAME           Model name (provider-specific)
   BATCH_SIZE           Number of rows per batch (default: 10)
   TEMPERATURE          Model temperature (default: 0.3)
 
 Examples:
-  node categorize.js --input data.csv --output results.csv
+  # Using Gemini (default)
+  API_PROVIDER=gemini node categorize.js --input data.csv --output results.csv
+  
+  # Using AWS Bedrock (Claude)
+  API_PROVIDER=bedrock node categorize.js --input data.csv --output results.csv
+  
+  # Resume processing
   node categorize.js --resume
   node categorize.js --clear --input data.csv
       `);
@@ -541,8 +550,16 @@ async function main() {
     logger.section('Feedback Categorization Script');
     logger.info(`Input: ${config.paths.input}`);
     logger.info(`Output: ${config.paths.output}`);
-    logger.info(`Model: ${config.api.model}`);
-    logger.info(`API Keys: ${config.api.keys.length}`);
+    logger.info(`Provider: ${config.api.provider}`);
+    
+    // Log provider-specific details
+    if (config.api.provider === 'gemini') {
+      logger.info(`Model: ${config.api.gemini.model}`);
+      logger.info(`API Keys: ${config.api.gemini.keys.length}`);
+    } else if (config.api.provider === 'bedrock') {
+      logger.info(`Model: ${config.api.bedrock.model}`);
+      logger.info(`Region: ${config.api.bedrock.region}`);
+    }
 
     // Clear progress if requested
     if (options.clear) {
@@ -639,15 +656,21 @@ async function main() {
     const costInfo = apiManager.calculateCost();
 
     logger.info('\n📊 API Statistics:');
+    logger.info(`  Provider: ${apiStats.provider}`);
     logger.info(`  Total Requests: ${apiStats.totalRequests}`);
     logger.info(`  Total Errors: ${apiStats.totalErrors}`);
     logger.info(`  Success Rate: ${apiStats.successRate}`);
+    
+    if (apiStats.provider === 'gemini' && apiStats.currentKeyIndex) {
+      logger.info(`  Current Key: ${apiStats.currentKeyIndex}/${apiStats.totalKeys}`);
+    }
 
     logger.info('\n💰 Token Usage & Cost:');
     logger.info(`  Input Tokens: ${costInfo.inputTokens.toLocaleString()}`);
     logger.info(`  Output Tokens: ${costInfo.outputTokens.toLocaleString()}`);
     logger.info(`  Total Tokens: ${costInfo.totalTokens.toLocaleString()}`);
     logger.info(`  Model: ${costInfo.model}`);
+    logger.info(`  Provider: ${costInfo.provider}`);
     logger.info(`  Input Cost: $${costInfo.inputCostUSD.toFixed(4)}`);
     logger.info(`  Output Cost: $${costInfo.outputCostUSD.toFixed(4)}`);
     logger.info(`  Total Cost: $${costInfo.totalCostUSD.toFixed(4)}`);
@@ -682,6 +705,7 @@ async function main() {
     // Log to cost.log
     logCostMetrics({
       status: 'success',
+      provider: config.api.provider,
       inputFile: config.paths.input,
       outputFile: config.paths.output,
       questionsCount: Object.keys(questionsConfig).length,
@@ -702,6 +726,7 @@ async function main() {
         outputCostUSD: costInfo.outputCostUSD,
         totalCostUSD: costInfo.totalCostUSD,
         model: costInfo.model,
+        provider: costInfo.provider,
         pricing: costInfo.pricing
       },
       discoveredCategories: discoveredCategoriesSummary,
@@ -718,6 +743,7 @@ async function main() {
     // Log error to cost.log
     logCostMetrics({
       status: 'error',
+      provider: config.api.provider,
       inputFile: config.paths.input,
       outputFile: config.paths.output,
       error: error.message,

@@ -10,12 +10,33 @@ require('dotenv').config();
 module.exports = {
   // ==================== API CONFIGURATION ====================
   api: {
-    // Gemini API keys (comma-separated in .env as API_KEYS)
+    // API Provider: 'gemini' or 'bedrock'
+    provider: process.env.API_PROVIDER || 'gemini',
+    
+    // Gemini Configuration
+    gemini: {
+      keys: process.env.API_KEYS 
+        ? process.env.API_KEYS.split(',').map(key => key.trim()).filter(key => key.length > 0)
+        : [],
+      model: process.env.MODEL_NAME || "gemini-2.0-flash-exp",
+      temperature: parseFloat(process.env.TEMPERATURE) || 0.3,
+    },
+    
+    // AWS Bedrock (Claude) Configuration
+    bedrock: {
+      region: process.env.AWS_REGION || 'us-east-1',
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+      model: process.env.BEDROCK_MODEL || 'global.anthropic.claude-sonnet-4-5-20250929-v1:0',
+      modelVersion: process.env.BEDROCK_MODEL_VERSION || 'bedrock-2023-05-31',
+      temperature: parseFloat(process.env.TEMPERATURE) || 0.3,
+      maxTokens: parseInt(process.env.MAX_TOKENS) || 4096,
+    },
+    
+    // Legacy compatibility - keep for backward compatibility
     keys: process.env.API_KEYS 
       ? process.env.API_KEYS.split(',').map(key => key.trim()).filter(key => key.length > 0)
       : [],
-    
-    // Model configuration
     model: process.env.MODEL_NAME || "gemini-2.0-flash-exp",
     temperature: parseFloat(process.env.TEMPERATURE) || 0.3,
     
@@ -142,9 +163,22 @@ module.exports = {
   validate() {
     const errors = [];
 
-    // Validate API keys
-    if (!this.api.keys || this.api.keys.length === 0) {
-      errors.push('No API keys provided. Set the API_KEYS environment variable.');
+    const provider = this.api.provider.toLowerCase();
+
+    // Validate based on provider
+    if (provider === 'gemini') {
+      if (!this.api.gemini.keys || this.api.gemini.keys.length === 0) {
+        errors.push('No Gemini API keys provided. Set the API_KEYS environment variable.');
+      }
+    } else if (provider === 'bedrock') {
+      if (!this.api.bedrock.accessKeyId || !this.api.bedrock.secretAccessKey) {
+        errors.push('AWS credentials not provided. Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.');
+      }
+      if (!this.api.bedrock.region) {
+        errors.push('AWS region not provided. Set AWS_REGION.');
+      }
+    } else {
+      errors.push(`Unknown API provider: ${provider}. Use 'gemini' or 'bedrock'.`);
     }
 
     // Validate file paths
